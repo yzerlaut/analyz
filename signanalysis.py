@@ -22,8 +22,7 @@ def autocorrel(signal, tmax, dt):
     signal = (signal-signal.mean())/signal.std()
     cr = np.correlate(signal[steps:],signal)/steps
     time_shift = np.arange(len(cr))*dt
-    return cr/cr.max(),time_shift
-
+    return cr/cr.max(), time_shift
 
 def crosscorrel(signal1,signal2):
     """
