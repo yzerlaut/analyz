@@ -1,7 +1,7 @@
 import numpy as np
 import sys
-sys.path.append('../')
-import IO.binary_to_python as binary_to_python
+sys.path.append('../../')
+import data_analysis.IO.binary_to_python as binary_to_python
 
 def get_formated_data(filename, zoom=[0,np.inf], with_params_only=False):
     data = get_metadata(filename)
