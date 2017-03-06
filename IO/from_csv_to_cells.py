@@ -10,6 +10,9 @@ def transform_csv_into_array_of_cells(csvfile):
         reader = csv.reader(csvfile, delimiter=';')
         for row in reader:
             CSV_ARRAY.append(row)
+    # extra keys that will be added
+    extra_keys = np.array(CSV_ARRAY)[0,4:]
+
     CSV_ARRAY = np.array(CSV_ARRAY)[1:,:]
     ii=1
     i_diff_folders = np.argwhere(CSV_ARRAY[:,0]!='').flatten()
@@ -24,7 +27,12 @@ def transform_csv_into_array_of_cells(csvfile):
             i_diff_cells = np.concatenate([i_diff_cells, [len(CSV_ARRAY3)]])
             for i5, i6 in zip(i_diff_cells[:-1], i_diff_cells[1:]):
                 CSV_ARRAY4 = CSV_ARRAY3[i5:i6,:]
-                CELLS.append({'day':CSV_ARRAY3[0,1], 'files':CSV_ARRAY4[1:,3], 'folder':CSV_ARRAY2[0,0], 'n':ii})
+                print(CSV_ARRAY4[1:,4:])
+                bd = {'day':CSV_ARRAY3[0,1], 'files':CSV_ARRAY4[1:,3], 'folder':CSV_ARRAY2[0,0], 'n':ii}
+                for i in range(len(extra_keys)):
+                    bd[extra_keys[i]] = CSV_ARRAY4[1:,4+i]
+                print(bd)
+                CELLS.append(bd)
                 ii+=1
     return CELLS
 

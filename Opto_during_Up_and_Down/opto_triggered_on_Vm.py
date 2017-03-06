@@ -1,9 +1,10 @@
 import numpy as np
-import sys
-sys.path.append('../..')
-import IO.load_data as L
-import Analysis.Up_and_Down_charact.Gaussian_Mixture as UDGM
-import Analysis.Up_and_Down_charact.state_classification as state_classification
+import sys, os, pathlib
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
+from data_analysis.IO.from_csv_to_cells import List_cells_and_choose_one
+import data_analysis.IO.load_data as L
+import data_analysis.Up_and_Down_charact.Gaussian_Mixture as UDGM
+import data_analysis.Up_and_Down_charact.state_classification as state_classification
 import matplotlib.pylab as plt
 
 ####################################################################################
