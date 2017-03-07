@@ -31,7 +31,6 @@ def transform_csv_into_array_of_cells(csvfile):
                 bd = {'day':CSV_ARRAY3[0,1], 'files':CSV_ARRAY4[1:,3], 'folder':CSV_ARRAY2[0,0], 'n':ii}
                 for i in range(len(extra_keys)):
                     bd[extra_keys[i]] = CSV_ARRAY4[1:,4+i]
-                print(bd)
                 CELLS.append(bd)
                 ii+=1
     return CELLS

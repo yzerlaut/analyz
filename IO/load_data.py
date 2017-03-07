@@ -13,12 +13,12 @@ def load_file(filename, zoom=[0,np.inf]):
     else:
         return None
 
-def get_metadata(filename):
+def get_metadata(filename, infos={}):
     print('filename is', filename)
     if filename.endswith('.bin'):
-        return binary.get_metadata(filename)
+        return binary.get_metadata(filename, infos=infos)
     elif filename.endswith('.abf'):
-        return axon.get_metadata(filename)
+        return axon.get_metadata(filename, infos=infos)
     elif filename.endswith('.npz'):
         return {'main_protocol':'modeling_work'}
     else:

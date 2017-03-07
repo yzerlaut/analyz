@@ -46,15 +46,15 @@ def get_protocol_name(filename):
         protocol += fn2[-1].split('.')[0] # removing extension
     return protocol
 
-def get_metadata(filename):
+def get_metadata(filename, infos={}):
     protocol = get_protocol_name(filename)
-    print(protocol)
     if protocol!='':
-        return {'main_protocol':'classic_electrophy',
+        bd = {'main_protocol':'classic_electrophy',
                 'protocol':protocol,
                 'clamp_index':2}
     else:
-        return {'main_protocol':'spont-act-sampling', 'clamp_index':1}
+        bd = {'main_protocol':'spont-act-sampling', 'clamp_index':1}
+    return dict(bd.keys()+infos.keys())
 
 
 if __name__ == '__main__':

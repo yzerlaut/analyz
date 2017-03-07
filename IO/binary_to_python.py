@@ -29,11 +29,11 @@ def load_file(filename, zoom=[0,np.inf]):
         print('File not Found !')
         return [[], []]
 
-def get_metadata(filename):
+def get_metadata(filename, infos={}):
     with open(filename.replace('.bin', '.json'), 'r') as json_data:
         data= json_data.read().replace('\n', '').replace('\\', '\\\\')
-        params = json.loads(data)
-        return params
+        bd = json.loads(data)
+    return dict(bd.keys()+infos.keys())
     
 if __name__ == '__main__':
     import sys
