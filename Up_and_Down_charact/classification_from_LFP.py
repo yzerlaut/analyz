@@ -57,11 +57,19 @@ def get_down_state_array(t, LFP, window=50e-3, factor=0.1):
     return down_state
 
 if __name__ == '__main__':
-    import sys, pathlib
-    sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-    import IO.load_data as L
+    
     import matplotlib.pylab as plt
+    plt.style.use('ggplot')
+    import sys, pathlib
+    sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
+    import data_analysis.IO.load_data as L
+    from data_analysis.freq_analysis.wavelet_transform import my_cwt
+    from graphs.my_graph import show, set_plot
+    from graphs.time_freq import time_freq_plot
     filename = '/Users/yzerlaut/DATA/Data_Ste_Zucca/2017_02_24/17_46_32_VCLAMP-WITH-THAL-AND-CORTEX-EXTRA.abf'
     t, [_, LFP, _] = L.load_file(filename)
-    plt.plot(t[:10000], LFP[:10000])
-    plt.show()
+    freqs = np.linspace(0.5, 100)
+    dt, tstop = t[1]-t[0], 5
+    coefs = my_cwt(LFP[:int(tstop/dt)], freqs, dt)
+    time_freq_plot(t[:int(tstop/dt)], freqs, LFP[:int(tstop/dt)], coefs)
+    show(plt)

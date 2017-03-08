@@ -57,8 +57,12 @@ def my_cwt(data, frequencies, dt):
     output = np.zeros([len(frequencies), len(data)])
     for ind, freq in enumerate(frequencies):
         wavelet_data = make_ricker_of_right_size(freq, dt)
-        output[ind, :] = signal.convolve(data-data.mean(), wavelet_data,
-                                         mode='same')/len(wavelet_data)
+        conv_number = signal.convolve(np.ones(len(data)), np.ones(len(wavelet_data)),
+                                      mode='same')
+        sliding_mean = signal.convolve(data, np.ones(len(wavelet_data)),
+                                       mode='same')/conv_number
+        output[ind, :] = signal.convolve(data-sliding_mean, wavelet_data,
+                                         mode='same')/conv_number
     return output
 
 
@@ -84,10 +88,11 @@ if __name__ == '__main__':
                         np.random.randn(len(t)), mode='same') # a slow one
     data += nl*np.convolve(np.exp(-np.arange(1000)*dt/5e-3),\
                         np.random.randn(len(t)), mode='same') # a faster one
-    
+
+    # Continuous Wavelet Transform analysis
     freqs = np.linspace(1, 90, 1e2)
     coefs = my_cwt(data, freqs, dt)
-    
+
     plt.figure(figsize=(12,6))
     plt.subplots_adjust(wspace=.8, hspace=.5, bottom=.2)
     # signal plot
