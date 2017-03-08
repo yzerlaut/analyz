@@ -64,12 +64,18 @@ if __name__ == '__main__':
     sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
     import data_analysis.IO.load_data as L
     from data_analysis.freq_analysis.wavelet_transform import my_cwt
+    from data_analysis.processing.denoise import remove_50Hz
     from graphs.my_graph import show, set_plot
     from graphs.time_freq import time_freq_plot
     filename = '/Users/yzerlaut/DATA/Data_Ste_Zucca/2017_02_24/17_46_32_VCLAMP-WITH-THAL-AND-CORTEX-EXTRA.abf'
     t, [_, LFP, _] = L.load_file(filename)
-    freqs = np.linspace(0.5, 100)
-    dt, tstop = t[1]-t[0], 5
-    coefs = my_cwt(LFP[:int(tstop/dt)], freqs, dt)
-    time_freq_plot(t[:int(tstop/dt)], freqs, LFP[:int(tstop/dt)], coefs)
-    show(plt)
+    dt, tstop = t[1]-t[0], 10
+    plt.plot(t[:int(tstop/dt)], LFP[:int(tstop/dt)])
+    signal, sine = remove_50Hz(t[:int(tstop/dt)], LFP[:int(tstop/dt)])
+    plt.plot(t[:int(tstop/dt)], signal[:int(tstop/dt)])
+    plt.plot(t[:int(tstop/dt)], sine[:int(tstop/dt)])
+    # freqs = np.linspace(0.5, 100)
+    # coefs = my_cwt(LFP[:int(tstop/dt)], freqs, dt)
+    # time_freq_plot(t[:int(tstop/dt)], freqs, LFP[:int(tstop/dt)], coefs)
+    # show(plt)
+    plt.show()

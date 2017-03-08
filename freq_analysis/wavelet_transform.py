@@ -63,7 +63,7 @@ def my_cwt(data, frequencies, dt):
                                        mode='same')/conv_number
         output[ind, :] = signal.convolve(data-sliding_mean, wavelet_data,
                                          mode='same')/conv_number
-    return output
+    return output/dt
 
 
 if __name__ == '__main__':
