@@ -56,3 +56,12 @@ def get_down_state_array(t, LFP, window=50e-3, factor=0.1):
             down_state[max([0,i-int(wdw/2)]):min([len(t),i+int(wdw/2)])] = 1
     return down_state
 
+if __name__ == '__main__':
+    import sys, pathlib
+    sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+    import IO.load_data as L
+    import matplotlib.pylab as plt
+    filename = '/Users/yzerlaut/DATA/Data_Ste_Zucca/2017_02_24/17_46_32_VCLAMP-WITH-THAL-AND-CORTEX-EXTRA.abf'
+    t, [_, LFP, _] = L.load_file(filename)
+    plt.plot(t[:10000], LFP[:10000])
+    plt.show()
