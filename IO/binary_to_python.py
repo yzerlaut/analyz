@@ -33,7 +33,7 @@ def get_metadata(filename, infos={}):
     with open(filename.replace('.bin', '.json'), 'r') as json_data:
         data= json_data.read().replace('\n', '').replace('\\', '\\\\')
         bd = json.loads(data)
-    return dict(bd.keys()+infos.keys())
+    return {**bd+**infos}
     
 if __name__ == '__main__':
     import sys

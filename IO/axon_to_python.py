@@ -54,7 +54,7 @@ def get_metadata(filename, infos={}):
                 'clamp_index':2}
     else:
         bd = {'main_protocol':'spont-act-sampling', 'clamp_index':1}
-    return dict(bd.keys()+infos.keys())
+    return {**bd+**infos}
 
 
 if __name__ == '__main__':
