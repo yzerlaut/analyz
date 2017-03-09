@@ -88,6 +88,16 @@ def butter_bandpass_filter(data, lowcut, highcut, Facq, order=5):
     y = signal.lfilter(b, a, data)
     return y
 
+def low_pass_by_convolve_with_exp(data, T, dt):
+    tt = np.arange(int(5.*T/dt))*dt
+    exp = np.exp(-tt/T)
+    conv_number = signal.convolve(np.ones(len(data)),
+                                  np.ones(len(exp)),
+                                  mode='same')
+    output = signal.convolve(data, exp,
+                             mode='same')/conv_number
+    return output
+
 if __name__=='__main__':
 
     import sys
@@ -98,7 +108,6 @@ if __name__=='__main__':
     else:
         filtertype = 'low-pass'
         
-
     # Filter requirements.
     order = 10
     fs = 300.0       # sample rate, Hz

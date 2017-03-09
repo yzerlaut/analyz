@@ -12,7 +12,6 @@ from scipy import signal
 def ricker(t, f, t0):
     """
     Ricker wavelet of frequency 'f' centered in t0 and  over and signal length.
-    taken from http://www.pygimli.org/_modules/pygimli/physics/seismics/seismics.html#ricker
     """
     fact = (np.pi**2) * (f**2) * ((t - t0)**2)
     y = (1.0 - 2.0 * fact) * np.exp(-fact)
@@ -65,6 +64,46 @@ def my_cwt(data, frequencies, dt):
                                          mode='same')/conv_number
     return output/dt
 
+def illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3):
+    """
+    a plot to illustrate the output of the wavelet analysis
+    """
+    fig = plt.figure(figsize=(12,6))
+    plt.subplots_adjust(wspace=.8, hspace=.5, bottom=.2)
+    # signal plot
+    plt.subplot2grid((3, 8), (0,0), colspan=6)
+    plt.plot(1e3*t, data, lw=2)
+    plt.ylabel('signal')
+    for f, tt in zip([freq2, freq1, freq3], [200,500,800]):
+        plt.annotate(str(int(f))+'Hz', (tt, data.max()))
+    plt.xlim([1e3*t[0], 1e3*t[-1]])
+    # time frequency power plot
+    ax1 = plt.subplot2grid((3, 8), (1,0), rowspan=2, colspan=6)
+    c = plt.contourf(1e3*t, freqs, coefs, cmap='PRGn', aspect='auto')
+    plt.xlabel('time (ms)')
+    plt.ylabel('frequency (Hz)')
+    plt.yticks([10, 40, 70, 100]);
+    # inset with legend
+    acb = plt.axes([.4, .4, .02, .2])
+    plt.colorbar(c, cax=acb, label='coeffs (a.u.)', ticks=[0])
+    # mean power plot over intervals
+    plt.subplot2grid((3, 8), (1, 6), rowspan=2)
+    for t1, t2 in zip([0,300e-3,700e-3], [300e-3,700e-3, 1000e-3]):
+        cond = (t>t1) & (t<t2)
+        plt.barh(freqs, np.power(coefs[:,cond],2).mean(axis=1)*dt,\
+                 label='t$\in$['+str(int(1e3*t1))+','+str(int(1e3*t2))+']')
+    plt.legend(prop={'size':'small'}, loc=(0.1,1.1))
+    plt.yticks([10, 40, 70, 100]);
+    plt.xlabel(' mean \n power')
+    # max of power over intervals
+    plt.subplot2grid((3, 8), (1, 7), rowspan=2)
+    for t1, t2 in zip([0,300e-3,600e-3], [300e-3,600e-3, 1000e-3]):
+        cond = (t>t1) & (t<t2)
+        plt.barh(freqs, np.power(coefs[:,cond],2).max(axis=1)*dt,\
+                 label='t$\in$['+str(int(1e3*t1))+','+str(int(1e3*t2))+']')
+    plt.yticks([10, 40, 70, 100]);
+    plt.xlabel(' max. \n power');
+    return fig
 
 if __name__ == '__main__':
 
@@ -93,34 +132,5 @@ if __name__ == '__main__':
     freqs = np.linspace(1, 90, 1e2)
     coefs = my_cwt(data, freqs, dt)
 
-    plt.figure(figsize=(12,6))
-    plt.subplots_adjust(wspace=.8, hspace=.5, bottom=.2)
-    # signal plot
-    plt.subplot2grid((3, 8), (0,0), colspan=6)
-    plt.plot(1e3*t, data)
-    plt.ylabel('signal');plt.xlabel('time (ms)')
-    plt.xlim([1e3*t[0], 1e3*t[-1]])
-    # time frequency power plot
-    plt.subplot2grid((3, 8), (1,0), rowspan=2, colspan=6)
-    c = plt.contourf(1e3*t, freqs, coefs, cmap='PRGn', aspect='auto')
-    plt.xlabel('time (ms)')
-    plt.ylabel('frequency (Hz)')
-    plt.yticks([10, 40, 70]);
-    # mean power plot over intervals
-    plt.subplot2grid((3, 8), (1, 6), rowspan=2)
-    for t1, t2 in zip([0,300e-3,700e-3], [300e-3,700e-3, 1000e-3]):
-        cond = (t>t1) & (t<t2)
-        plt.barh(freqs, np.power(coefs[:,cond],2).mean(axis=1),\
-                 label='t$\in$['+str(int(1e3*t1))+','+str(int(1e3*t2))+']')
-    plt.legend(prop={'size':'small'}, loc=(0.1,1.1))
-    plt.yticks([10, 40, 70]);
-    plt.xlabel(' mean \n power')
-    # max of power over intervals
-    plt.subplot2grid((3, 8), (1, 7), rowspan=2)
-    for t1, t2 in zip([0,300e-3,600e-3], [300e-3,600e-3, 1000e-3]):
-        cond = (t>t1) & (t<t2)
-        plt.barh(freqs, np.power(coefs[:,cond],2).max(axis=1),\
-                 label='t$\in$['+str(int(1e3*t1))+','+str(int(1e3*t2))+']')
-    plt.yticks([10, 40, 70]);
-    plt.xlabel(' max. \n power')
+    illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3)
     plt.show()
