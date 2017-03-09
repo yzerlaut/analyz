@@ -68,6 +68,7 @@ def illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3):
     """
     a plot to illustrate the output of the wavelet analysis
     """
+    import matplotlib.pylab as plt
     fig = plt.figure(figsize=(12,6))
     plt.subplots_adjust(wspace=.8, hspace=.5, bottom=.2)
     # signal plot
