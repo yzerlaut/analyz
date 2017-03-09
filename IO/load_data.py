@@ -24,6 +24,16 @@ def get_metadata(filename, infos={}):
     else:
         return None
 
+def get_formated_data(filename):
+
+    t, VEC = load_file(filename)
+    meta = get_metadata(filename)
+    data = {'t':t, 'Vm':VEC[0],
+            'infos':meta, 'dt':t[1]-t[0]}
+
+    return data
+    
+    
 if __name__ == '__main__':
     import sys
     import matplotlib.pylab as plt

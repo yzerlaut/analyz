@@ -4,13 +4,19 @@ from sklearn import mixture
 def hvsd(x): # heaviside step function
     return .5*(1.+np.sign(x))*x
 
+def gaussian(x, mean, std):
+    output = np.exp(-(x-mean)**2/2./std**2)/np.sqrt(2.*np.pi)/std
+    return output
+
 def fit_3gaussians(Vm, n=1000, ninit=3, bound1=-90, bound2=-35):
-    clf = mixture.GaussianMixture(n_components=3, max_iter=n, n_init=ninit, means_init=((-80,), (-65,), (-50,)), covariance_type='spherical')
+    clf = mixture.GaussianMixture(n_components=3, max_iter=n, n_init=ninit,
+                                  means_init=((-80,), (-65,), (-50,)), covariance_type='spherical')
     clf.fit(np.array((Vm[(Vm>bound1) & (Vm<bound2)],)).T)
     return clf.weights_, clf.means_.flatten(), np.sqrt(clf.covariances_)
 
-def fit_2gaussians(Vm, n=1000, ninit=3, bound1=-90, bound2=-35):
-    clf = mixture.GaussianMixture(n_components=2, max_iter=n, n_init=ninit, means_init=((-80,), (-50,)), covariance_type='spherical')
+def fit_2gaussians(Vm, n=1000, ninit=3, bound1=-90, bound2=-35, means_init=((-80,), (-50,))):
+    clf = mixture.GaussianMixture(n_components=2, max_iter=n, n_init=ninit,
+                                  covariance_type='spherical')
     clf.fit(np.array((Vm[(Vm>bound1) & (Vm<bound2)],)).T)
     return clf.weights_, clf.means_.flatten(), np.sqrt(clf.covariances_)
 
@@ -42,9 +48,9 @@ def loop_over_sliding_window(data, window_size=5., window_update=2.5):
 if __name__ == '__main__':
     import sys
     sys.path.append('../..')
-    import IO.load_data as L
+    from data_analysis.IO.load_data import load_file, get_formated_data
     import state_classification
-    data = L.get_formated_data('/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2016_12_6/16_48_19_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin')
+    data = get_formated_data('/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2016_12_6/16_48_19_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin')
     t1, t2 = loop_over_sliding_window(data)
     UD_transitions, DU_transitions = state_classification.get_transition_times(data['t'], data['Vm'], t1, t2)
     import matplotlib.pylab as plt
