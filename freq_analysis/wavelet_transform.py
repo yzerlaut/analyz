@@ -56,15 +56,19 @@ def my_cwt(data, frequencies, dt):
     output = np.zeros([len(frequencies), len(data)])
     for ind, freq in enumerate(frequencies):
         wavelet_data = make_ricker_of_right_size(freq, dt)
+        # the wavelets have different integrals
+        # conv_number compensates for the number of summed points (i.e. also integral of wavelet)
         conv_number = signal.convolve(np.ones(len(data)), np.ones(len(wavelet_data)),
                                       mode='same')
+        # the sliding mean that depends on the frequency
         sliding_mean = signal.convolve(data, np.ones(len(wavelet_data)),
                                        mode='same')/conv_number
+        # the final convolution
         output[ind, :] = signal.convolve(data-sliding_mean, wavelet_data,
                                          mode='same')/conv_number
-    return output/dt
+    return output
 
-def illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3):
+def illustration_plot(t, freqs, data, coefs, dt, tstop, freq1, freq2, freq3):
     """
     a plot to illustrate the output of the wavelet analysis
     """
@@ -73,7 +77,7 @@ def illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3):
     plt.subplots_adjust(wspace=.8, hspace=.5, bottom=.2)
     # signal plot
     plt.subplot2grid((3, 8), (0,0), colspan=6)
-    plt.plot(1e3*t, data, lw=2)
+    plt.plot(1e3*t, data, 'k-', lw=2)
     plt.ylabel('signal')
     for f, tt in zip([freq2, freq1, freq3], [200,500,800]):
         plt.annotate(str(int(f))+'Hz', (tt, data.max()))
@@ -86,7 +90,7 @@ def illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3):
     plt.yticks([10, 40, 70, 100]);
     # inset with legend
     acb = plt.axes([.4, .4, .02, .2])
-    plt.colorbar(c, cax=acb, label='coeffs (a.u.)', ticks=[0])
+    plt.colorbar(c, cax=acb, label='coeffs (a.u.)', ticks=[-1, 0, 1])
     # mean power plot over intervals
     plt.subplot2grid((3, 8), (1, 6), rowspan=2)
     for t1, t2 in zip([0,300e-3,700e-3], [300e-3,700e-3, 1000e-3]):
@@ -95,7 +99,8 @@ def illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3):
                  label='t$\in$['+str(int(1e3*t1))+','+str(int(1e3*t2))+']')
     plt.legend(prop={'size':'small'}, loc=(0.1,1.1))
     plt.yticks([10, 40, 70, 100]);
-    plt.xlabel(' mean \n power')
+    plt.xticks([]);
+    plt.xlabel(' mean \n power \n (a.u.)')
     # max of power over intervals
     plt.subplot2grid((3, 8), (1, 7), rowspan=2)
     for t1, t2 in zip([0,300e-3,600e-3], [300e-3,600e-3, 1000e-3]):
@@ -103,7 +108,8 @@ def illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3):
         plt.barh(freqs, np.power(coefs[:,cond],2).max(axis=1)*dt,\
                  label='t$\in$['+str(int(1e3*t1))+','+str(int(1e3*t2))+']')
     plt.yticks([10, 40, 70, 100]);
-    plt.xlabel(' max. \n power');
+    plt.xticks([]);
+    plt.xlabel(' max. \n power \n (a.u.)');
     return fig
 
 if __name__ == '__main__':
@@ -118,7 +124,7 @@ if __name__ == '__main__':
 
     # ### artificially generated signal, transient oscillations
     freq1, width1, freq2, width2, freq3, width3 = 10., 100e-3, 40., 40e-3, 70., 20e-3
-    data  = 50+np.cos(2*np.pi*freq1*t)*np.exp(-(t-.5)**2/2./width1**2)+\
+    data  = 3.2+np.cos(2*np.pi*freq1*t)*np.exp(-(t-.5)**2/2./width1**2)+\
             np.cos(2*np.pi*freq2*t)*np.exp(-(t-.2)**2/2./width2**2)+\
             np.cos(2*np.pi*freq3*t)*np.exp(-(t-.8)**2/2./width3**2)
     
@@ -133,5 +139,5 @@ if __name__ == '__main__':
     freqs = np.linspace(1, 90, 1e2)
     coefs = my_cwt(data, freqs, dt)
 
-    illustration_plot(t, data, coefs, dt, tstop, freq1, freq2, freq3)
+    illustration_plot(t, freqs, data, coefs, dt, tstop, freq1, freq2, freq3)
     plt.show()

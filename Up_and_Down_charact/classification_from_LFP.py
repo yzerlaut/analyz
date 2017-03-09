@@ -70,12 +70,7 @@ if __name__ == '__main__':
     filename = '/Users/yzerlaut/DATA/Data_Ste_Zucca/2017_02_24/17_46_32_VCLAMP-WITH-THAL-AND-CORTEX-EXTRA.abf'
     t, [_, LFP, _] = L.load_file(filename)
     dt, tstop = t[1]-t[0], 10
-    plt.plot(t[:int(tstop/dt)], LFP[:int(tstop/dt)])
-    signal, sine = remove_50Hz(t[:int(tstop/dt)], LFP[:int(tstop/dt)])
-    plt.plot(t[:int(tstop/dt)], signal[:int(tstop/dt)])
-    plt.plot(t[:int(tstop/dt)], sine[:int(tstop/dt)])
-    # freqs = np.linspace(0.5, 100)
-    # coefs = my_cwt(LFP[:int(tstop/dt)], freqs, dt)
-    # time_freq_plot(t[:int(tstop/dt)], freqs, LFP[:int(tstop/dt)], coefs)
-    # show(plt)
-    plt.show()
+    freqs = np.linspace(0.5, 100)
+    coefs = my_cwt(LFP[:int(tstop/dt)], freqs, dt)
+    time_freq_plot(t[:int(tstop/dt)], freqs, LFP[:int(tstop/dt)], coefs)
+    show(plt)
