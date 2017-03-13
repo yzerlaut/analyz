@@ -89,10 +89,14 @@ def butter_bandpass_filter(data, lowcut, highcut, Facq, order=5):
     return y
 
 def low_pass_by_convolve_with_exp(data, T, dt):
+    """
+    function to be worked out, normalization not ok
+    """
     tt = np.arange(int(5.*T/dt))*dt
-    exp = np.exp(-tt/T)
+    tmid = tt[int(len(tt)/2.)]
+    exp = np.array([np.exp(-(t2-tmid)/T) if t2>=tmid else 0 for t2 in tt])
     conv_number = signal.convolve(np.ones(len(data)),
-                                  np.ones(len(exp)),
+                                  .5*(1+np.sign(tt-tmid)),
                                   mode='same')
     output = signal.convolve(data, exp,
                              mode='same')/conv_number

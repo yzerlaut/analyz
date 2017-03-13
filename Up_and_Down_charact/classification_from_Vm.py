@@ -25,7 +25,7 @@ def fit_2gaussians(Vm, n=1000, ninit=3, upper_bound=-35, nbins=100):
         return np.power(hist-double_gaussian, 2).sum()
 
     # initial values
-    mean0, std0 = Vm.min(), Vm.std()
+    mean0, std0 = Vm.mean(), Vm.std()
     w, m1, m2, s1, s2 = 0.5, mean0-std0, mean0+std0, std0/2., std0/2.
     
     res = minimize(to_minimize, [w, m1, m2, s1, s2],

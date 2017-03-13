@@ -1,76 +1,63 @@
+"""
+Some functions are identical (so imported from) the classification_from_Vm.py file
+"""
+
 import numpy as np
+import sys, pathlib
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
+from data_analysis.Up_and_Down_charact.classification_from_Vm import get_state_intervals, gaussian
 
-def get_transition_times(t, LFP, window=25e-3, factor=0.1):
+def fit_2gaussians(LFP, n=1000, ninit=3, nbins=100):
     """
-    2 thresholds strategy for state transition characterization
+    take the histogram of the Vm values
+    and fits two gaussians using the least square algorithm
+
+    'upper_bound' cuts spikes !
+
+    returns the weights, means and standard deviation of the
+    gaussian functions
     """
-    dt = t[1]-t[0]
-    wdw = int(window/dt)
-
-    # subsampling
-    new_t = t[::wdw]
-    varLFP = np.array([np.std(LFP[max([0,int(tt/dt-wdw)]):min([int(t[-1]/dt), int(tt/dt+wdw)])]) for tt in new_t])
-
-    hist, be = np.histogram(varLFP, bins=np.linspace(varLFP.min(), varLFP.max(), 100))
-    be_hist = .5*(be[1:]+be[:-1])
-
-    meanThre = be_hist[np.argmax(hist)] # mean of the two threshold
-    stdThre = factor*np.std(varLFP)
-
-    DU_threshold = meanThre+stdThre
-    UD_threshold = max([meanThre-stdThre, 1.2*varLFP.min()])
-
-    down_flag = False
-    if varLFP[0]>UD_threshold:
-        down_state = True
-    UD_transitions, DU_transitions = [], [],
-    for i in range(len(varLFP)):
-        if varLFP[i]>DU_threshold and down_flag:
-            DU_transitions.append(new_t[i]-window)
-            down_flag = False
-        if varLFP[i]<UD_threshold and not down_flag:
-            UD_transitions.append(new_t[i]-window)
-            down_flag = True
-            
-    return np.array(UD_transitions), np.array(DU_transitions)
-
-
-def get_down_state_array(t, LFP, window=50e-3, factor=0.1):
-    """
-    2 thresholds strategy for state transition characterization
-    """
-    dt = t[1]-t[0]
-    wdw = int(window/dt)
-
-    # subsampling
-    new_t, new_i = t[::wdw], np.arange(len(t))[::wdw]
-    varLFP = np.array([np.std(LFP[max([0,int(tt/dt-wdw)]):min([int(t[-1]/dt), int(tt/dt+wdw)])]) for tt in new_t])
-
-    meanThre = np.mean(varLFP)
-    stdThre = factor*np.std(varLFP)
-    # print(meanThre-stdThre, meanThre, stdThre)
+    vbins = np.linspace(LFP.min(), LFP.max(), nbins) # discretization of Vm for histogram
+    hist, be = np.histogram(LFP, vbins, normed=True) # normalized distribution
+    vv = 0.5*(be[1:]+be[:-1]) # input vector is center of bin edges
     
-    down_state = 0.*t
-    for i in new_i:
-        if varLFP[int(i/wdw)]<meanThre-stdThre:
-            down_state[max([0,i-int(wdw/2)]):min([len(t),i+int(wdw/2)])] = 1
-    return down_state
+    def to_minimize(args):
+        w, m1, m2, s1, s2 = args
+        double_gaussian = w*gaussian(vv, m1, s1)+(1.-w)*gaussian(vv, m2, s2)
+        return np.power(hist-double_gaussian, 2).sum()
 
-if __name__ == '__main__':
+    # initial values
+    mean0, std0 = LFP.mean(), LFP.std()
+    w, m1, m2, s1, s2 = 0.5, mean0-std0, mean0+std0, std0/2., std0/2.
     
-    import matplotlib.pylab as plt
-    plt.style.use('ggplot')
-    import sys, pathlib
-    sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
-    import data_analysis.IO.load_data as L
-    from data_analysis.freq_analysis.wavelet_transform import my_cwt
-    from data_analysis.processing.denoise import remove_50Hz
-    from graphs.my_graph import show, set_plot
-    from graphs.time_freq import time_freq_plot
-    filename = '/Users/yzerlaut/DATA/Data_Ste_Zucca/2017_02_24/17_46_32_VCLAMP-WITH-THAL-AND-CORTEX-EXTRA.abf'
-    t, [_, LFP, _] = L.load_file(filename)
-    dt, tstop = t[1]-t[0], 10
-    freqs = np.linspace(0.5, 100)
-    coefs = my_cwt(LFP[:int(tstop/dt)], freqs, dt)
-    time_freq_plot(t[:int(tstop/dt)], freqs, LFP[:int(tstop/dt)], coefs)
-    show(plt)
+    res = minimize(to_minimize, [w, m1, m2, s1, s2],
+                   method='L-BFGS-B',
+                   bounds = [(.05, .95),
+                             (vv.min(), vv.max()), (vv.min(), vv.max()),
+                             (1e-2, vv.max()-vv.min()), (1e-2, vv.max()-vv.min())],
+                   options={'maxiter':n})
+
+    w, m1, m2, s1, s2 = res.x
+    
+    return (w, 1-w), (m1, m2), (s1, s2)
+
+
+def determine_threshold(weigths, means, stds, with_amp=False):
+    """ Gives the thresholds given the Gaussian Mixture"""
+    
+    i0, i1 = np.argmin(means), np.argmax(means) # find the upper and lower distrib
+
+    if stds[i0]/stds[i1]<.5:
+        vv = np.linspace(means[i0], means[i1], 1e2) # the point is in between the two means
+        gaussian1 = weigths[i0]*gaussian(vv, means[i0], stds[i0])
+        gaussian2 = weigths[i1]*gaussian(vv, means[i1], stds[i1])
+        ii = np.argmin(np.power(gaussian1-gaussian2, 2))
+        threshold, amp = vv[ii], gaussian1[ii]
+    else:
+        threshold, amp = means[i0], weigths[i0]*gaussian(0,0,stds[i0])
+        
+    if with_amp:
+        return threshold, amp
+    else:
+        return threshold
+
