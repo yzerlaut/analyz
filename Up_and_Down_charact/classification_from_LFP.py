@@ -22,7 +22,7 @@ def processLFP(LFP, freqs, dt, lin_combination=None, smoothing=50e-3):
     
     return output
      
-def fit_2gaussians(pLFP, n=1000, nbins=100):
+def fit_2gaussians(pLFP, n=1000, nbins=200):
     """
     take the histogram of the Vm values
     and fits two gaussians using the least square algorithm
