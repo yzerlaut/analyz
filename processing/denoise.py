@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
-
+from scipy.signal import convolve
 
 def remove_50Hz(t, signal):
     """
@@ -21,4 +21,18 @@ def remove_50Hz(t, signal):
     # return signal-sinewave(res.x)
     return signal, sinewave(res.x, t=t)
     
+def remove_mean_drift(t, data, T=1.):
+    """
+    evaluate the mean of a signal over a sliding window of size T
+    and substract this mean to the signal !
+    """
+    # the convolution function is a Heaviside function to get the mean
+    conv_func = np.ones(int(T/(t[1]-t[0]))) 
+    # the number of convoluted points is variable (boundary effect)
+    conv_number = convolve(np.ones(len(data)), conv_func,
+                                      mode='same')
+        # the sliding mean that depends on the frequency
+    sliding_mean = convolve(data, conv_func,
+                                   mode='same')/conv_number
+    return data-sliding_mean
     

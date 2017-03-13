@@ -136,7 +136,6 @@ if __name__=='__main__':
     plt.xlabel('Frequency [Hz]')
     plt.grid()
 
-
     # Demonstrate the use of the filter.
     # First make some data to be filtered.
     T = 5.0         # seconds
