@@ -22,7 +22,7 @@ def processLFP(LFP, freqs, dt, lin_combination=None, smoothing=50e-3):
     
     return output
      
-def fit_2gaussians(pLFP, n=1000, ninit=3, nbins=100):
+def fit_2gaussians(pLFP, n=1000, nbins=100):
     """
     take the histogram of the Vm values
     and fits two gaussians using the least square algorithm
@@ -62,16 +62,15 @@ def determine_threshold(weigths, means, stds, with_amp=False):
     
     i0, i1 = np.argmin(means), np.argmax(means) # find the upper and lower distrib
 
-    # if stds[i0]/stds[i1]<.5:
-    #     vv = np.linspace(means[i0], means[i1], 1e2) # the point is in between the two means
-    #     gaussian1 = weigths[i0]*gaussian(vv, means[i0], stds[i0])
-    #     gaussian2 = weigths[i1]*gaussian(vv, means[i1], stds[i1])
-    #     ii = np.argmin(np.power(gaussian1-gaussian2, 2))
-    #     threshold, amp = vv[ii], gaussian1[ii]
-    # else:
-    #     threshold, amp = means[i0], weigths[i0]*gaussian(0,0,stds[i0])
+    if stds[i0]/stds[i1]<.5:
+        vv = np.linspace(means[i0], means[i1], 1e2) # the point is in between the two means
+        gaussian1 = weigths[i0]*gaussian(vv, means[i0], stds[i0])
+        gaussian2 = weigths[i1]*gaussian(vv, means[i1], stds[i1])
+        ii = np.argmin(np.power(gaussian1-gaussian2, 2))
+        threshold, amp = vv[ii], gaussian1[ii]
+    else:
+        threshold, amp = means[i0], weigths[i0]*gaussian(0,0,stds[i0])
         
-    threshold, amp = means[i0], weigths[i0]*gaussian(0,0,stds[i0])
     if with_amp:
         return threshold, amp
     else:

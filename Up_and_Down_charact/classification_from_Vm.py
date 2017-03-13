@@ -5,7 +5,7 @@ def gaussian(x, mean, std):
     output = np.exp(-(x-mean)**2/2./std**2)/np.sqrt(2.*np.pi)/std
     return output
 
-def fit_2gaussians(Vm, n=1000, ninit=3, upper_bound=-35, nbins=100):
+def fit_2gaussians(Vm, n=1000, upper_bound=-35, nbins=100):
     """
     take the histogram of the Vm values
     and fits two gaussians using the least square algorithm
