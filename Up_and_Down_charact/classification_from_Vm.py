@@ -65,10 +65,22 @@ def determine_thresholds(weigths, means, stds):
     
     i0, i1 = np.argmin(means), np.argmax(means) # find the upper and lower distrib
 
-    return means[i1]-stds[i1], means[i1]-stds[i1]
+    # find the intersection between the two distrib
+    vv = np.linspace(means[i0], means[i1], 1e2) # the point is in between the two means
+    gaussian1 = weigths[i0]*gaussian(vv, means[i0], stds[i0])
+    gaussian2 = weigths[i1]*gaussian(vv, means[i1], stds[i1])
+    ii = np.argmin(np.power(gaussian1-gaussian2, 2))
+    
+    if stds[i0]/stds[i1]<.5:
+        # low variance of down state, i.e. very visible down state
+        threshold_down, amp = vv[ii], gaussian1[ii]
+    else:
+        threshold_down, amp = means[i0], weigths[i0]*gaussian(0,0,stds[i0])
+    threshold_up = max([threshold_down, means[i1]-stds[i1]])
+    return threshold_up, threshold_down
 
 
-def get_state_intervals(Vm, threshold_up, threshold_down, dt,
+def get_state_intervals(t, Vm, threshold_up, threshold_down,
                         fluct_duration_criteria=30e-3,
                         min_duration_criteria=100e-3):
     """
@@ -78,132 +90,108 @@ def get_state_intervals(Vm, threshold_up, threshold_down, dt,
     """
 
     Up_intervals, Down_intervals = [], []
+    dt = t[1]-t[0]
 
-    #### =========== #####
-    ###   Up states   ###
-    #### =========== #####
-
-    iup = np.argwhere(Vm>threshold_up) # basic characterization: being above threshold
-    i=0
-    while i<len(iup):
-        i0 = i
-        while (iup[i+1]-iup[i])<int(fluct_duration_criteria/dt):
-            # meaning we're in the same up state
-            i+=1
-        # then this interval is finished
-        print(i)
-        Up_intervals.append([iup[i0], iup[i]])
-
-    # then removing too short intervals
-    i = 0
-    while i<len(Up_intervals):
-        if (Up_intervals[i][1]-Up_intervals[i][1])<min_duration_criteria:
-            Up_intervals.remove(Up_intervals[i])
-
-    #### =========== #####
-    ###   Down states   ###
-    #### =========== #####
-
-    idown = np.argwhere(Vm<threshold_down) # basic characterization: being below threshold
-    i=0
-    while i<len(idown):
-        i0 = i
-        while (idown[i+1]-idown[i])<int(fluct_duration_criteria/dt):
-            # meaning we're in the same down state
-            i+=1
-        # then this interval is finished
-        print(i)
-        Down_intervals.append([idown[i0], idown[i]])
-
-    # then removing too short intervals
-    i = 0
-    while i<len(Down_intervals):
-        if (Down_intervals[i][1]-Down_intervals[i][1])<min_duration_criteria:
-            Down_intervals.remove(Down_intervals[i])
-
-    return Up_intervals, Down_intervals
-
-def get_state_intervals2(t, Vm, threshold,
-                        duration_criteria=100e-3):
-    """
-    single threshold strategy for state transition characterization
-    with a duration criteria
-
-    """
-
-    Up_intervals, Down_intervals = [], []
-
-    iupward = np.argwhere( (Vm[:-1]<threshold) & (Vm[1:]>=threshold)).flatten()
-    idownward = np.argwhere( (Vm[:-1]>threshold) & (Vm[1:]<=threshold)).flatten()
-
-    if iupward[0]<idownward[0]:
-        # we start by down state
-        start_with_down = True
-        Down_intervals.append([t[0]-duration_criteria, t[iupward[0]]])
-        # then we fill in order
-        for i in range(min([len(idownward), len(iupward)-1])):
-            Down_intervals.append([t[idownward[i]], t[iupward[i+1]]])
-        for i in range(min([len(idownward), len(iupward)])):
-            Up_intervals.append([t[iupward[i]], t[idownward[i]]])
-    else:
-        start_with_down = False
-        # we start by up state
-        Up_intervals.append([t[0]-duration_criteria, t[idownward[0]]])
-        # then we fill in order
-        for i in range(min([len(iupward), len(idownward)-1])):
-            Up_intervals.append([t[iupward[i]], t[idownward[i+1]]])
-        for i in range(min([len(idownward), len(iupward)])):
-            Down_intervals.append([t[idownward[i]], t[iupward[i]]])
-
-    if iupward[-1]>idownward[-1]:
-        # we finish by Up state
-        Up_intervals.append([t[iupward[-1]], t[-1]])
-    else:
-        Down_intervals.append([t[idownward[-1]], t[-1]])
-
-    # now we check whether the duration criteria is matched
-    # and we correct
-
-    iup, idown = 0, 0
+    for i in range(len(t)):
         
-    while (iup<len(Up_intervals)) and (idown<len(Down_intervals)):
-        if Down_intervals[idown][0]<Up_intervals[iup][0]:
-            # need to look at down state duration
-            if (Down_intervals[idown][1]-Down_intervals[idown][0])>duration_criteria:
-                # we pass the criteria
-                idown += 1
-            else:
-                # we don't pass
-                # we remove this down state interval
-                Down_intervals.remove(Down_intervals[idown])
-                # and the next up state as it is prolongs with the previous one !
-                Up_intervals[iup-1][1] = Up_intervals[iup][1]
-                Up_intervals.remove(Up_intervals[iup])
-        else:
-            # need to look at up state duration
-            if (Up_intervals[iup][1]-Up_intervals[iup][0])>duration_criteria:
-                # we pass the criteria
-                iup += 1
-            else:
-                # we don't pass
-                # we remove this up state interval
-                Up_intervals.remove(Up_intervals[iup])
-                # and the next down state as it is merged with the previous one !
-                Down_intervals[idown-1][1] = Down_intervals[idown][1]
-                Down_intervals.remove(Down_intervals[idown])
-                
+
+        
+    iup = np.argwhere(Vm>threshold_up).flatten() # basic characterization: being above threshold
+    idown = np.argwhere(Vm<threshold_down).flatten() # basic characterization: being below threshold
+
+    INTERVALS = []
+    for istate in [iup, idown]:
+        
+        statetransitions = t[np.argwhere(np.diff(istate)>1).flatten()]
+        print(statetransitions)
+        if istate[0]==0:
+            # we start with the state state
+            statetransitions = np.concatenate([[0], statetransitions])
+        print(statetransitions)
+        if len(statetransitions)%2>0:
+            statetransitions = np.concatenate([statetransitions, [t[-1]]])
+        INTERVALS.append(statetransitions.reshape((int(len(statetransitions)/2),2)))
+    Up_intervals, Down_intervals = INTERVALS[0], INTERVALS[1]
+    
+    print(Up_intervals)
+    print(Down_intervals)
+        
+    # for istate, intervals in zip([iup, idown],
+    #                              [Up_intervals, Down_intervals]):
+    #     print('state change')
+    #     # same strategy for up and down states
+    #     i0, i= 0, 0
+    #     while i<len(istate)-1:
+    #         # while ((istate[i]-istate[i-1])<2) & (i<len(istate)-1):
+    #         while ((t[istate[i]]-t[istate[i-1]])<fluct_duration_criteria) & (i<len(istate)-1):
+    #             # meaning we're in the same up state
+    #             i+=1
+    #             # print(((t[istate[i]]-t[istate[i-1]])<fluct_duration_criteria), (i<len(istate)-1))
+    #         # print(t[istate[i0]], t[istate[i]], t[istate[i+1]]-t[istate[i]], fluct_duration_criteria)
+    #         # then this interval is finished
+    #         intervals.append([t[istate[i0]], t[istate[i]]])
+    #         i+=1
+    #         i0 = i
+    #     # print(intervals)
+    #     # then removing too short intervals
+    #     # i = 0
+    #     # while i<len(intervals):
+    #     #     if (intervals[i][1]-intervals[i][1])<min_duration_criteria:
+    #     #         intervals.remove(intervals[i])
+    #     #     i+=1
+
     return Up_intervals, Down_intervals
+
                 
 if __name__=='__main__':
     
     import sys
     sys.path.append('../..')
     from data_analysis.IO.load_data import load_file, get_formated_data
-    t, [Vm, _, _, _, _, LFP] = load_file('/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2016_12_6/16_48_19_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin', zoom=[0, 20])
+    from graphs.my_graph import show
+    tstop = 2
+    t, [Vm, _, _, _, _, LFP] = load_file(\
+            '/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2016_12_6/16_48_19_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin', zoom=[0, tstop])
+    vbins = np.linspace(Vm.min(), -30)
     weights, means, stds = fit_2gaussians(Vm)
     threshold_up, threshold_down = determine_thresholds(weights, means, stds)    
-    Up_intervals, Down_intervals = get_state_intervals(Vm,
-                                                       threshold_up, threshold_down,
-                                                       t[-1]-t[0],
-                                                       min_duration_criteria=100e-3)
-    print(Up_intervals, Down_intervals)
+    Up_intervals, Down_intervals = get_state_intervals(t, Vm,
+                                                       threshold_up, threshold_down)
+    i=0
+    import matplotlib.pylab as plt
+    plt.subplot2grid((2, 6), (i,0), colspan=5)
+    plt.plot(t[t<tstop], Vm[t<tstop], lw=1)
+    plt.ylim([vbins[0],vbins[-1]])
+    plt.gca().set_xticklabels([])
+    plt.ylabel('$V_m$ (mV)')
+    plt.annotate('('+'i'*(i+1)+')', (-.2, 1), xycoords='axes fraction')    
+    ax = plt.gca()
+    # compute histogram and gaussian mixture (histogram over full data !)
+    Vmhist, be = np.histogram(Vm, bins=vbins, normed=True)
+    plt.subplot2grid((1+2, 6), (i,5))
+    plt.barh(.5*(be[1:]+be[:-1]), Vmhist, height=be[1]-be[0])
+    # establish gaussian mixture
+    for w, m, s in zip(weights, means, stds):
+        plt.plot(w*gaussian(vbins, m, s), vbins, ':', lw=1, color='k')
+    # find threshold as the interesction of the two Gaussians
+    ax.plot(t[t<tstop], threshold_up+0.*t[t<tstop], '--', lw=1.5, label='Up threshold')
+    ax.plot(t[t<tstop], threshold_down+0.*t[t<tstop], '--', lw=1.5, label='Down threshold')
+    # threshold, amp = determine_threshold(weights, means, stds,
+    #                                      Vm_min=Vm.min(), with_amp=True)
+    # plt.plot([amp], [threshold], 'ko')
+    # ax.plot(t[t<tstop], threshold+0.*t[t<tstop], '--', lw=1.5, label='threshold')
+    # determine up and down states
+    # Up_intervals, Down_intervals = get_state_intervals(t[t<tstop], Vm[t<tstop], threshold,
+    #                                                    duration_criteria=100e-3)
+    for (t1, t2) in Up_intervals:
+        ax.fill_between([t1,t2], ax.get_ylim()[0]*np.ones(2),
+                        ax.get_ylim()[1]*np.ones(2), color='r', alpha=.1, lw=0)
+    # for (t1, t2) in Down_intervals:
+    #     ax.fill_between([t1,t2], ax.get_ylim()[0]*np.ones(2),
+    #                     ax.get_ylim()[1]*np.ones(2), color='b', alpha=.1, lw=0)
+    plt.ylim([vbins[0],vbins[-1]])
+    plt.gca().set_yticklabels([])
+    plt.xticks([])
+
+
+    show(plt)
