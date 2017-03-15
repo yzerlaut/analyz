@@ -9,7 +9,14 @@ from data_analysis.Up_and_Down_charact.classification_from_Vm import get_state_i
 from data_analysis.freq_analysis.wavelet_transform import my_cwt
 from data_analysis.processing.signanalysis import butter_lowpass_filter
 
-def processLFP(LFP, freqs, dt, lin_combination=None, smoothing=50e-3):
+def get_time_variability(Pow_vs_t, dt, T=10e-3):
+    iT = int(T/dt)
+    var = 0.*Pow_vs_t
+    for i in range(len(Pow_vs_t)):
+        var[i] = Pow_vs_t[max([0,i-iT]):min([i+iT,len(Pow_vs_t)])].std()
+    return var
+
+def processLFP(LFP, freqs, dt, lin_combination=None, smoothing=10e-3):
 
     if lin_combination is None:
         # by default all frequencies are equally weighted !
@@ -18,7 +25,9 @@ def processLFP(LFP, freqs, dt, lin_combination=None, smoothing=50e-3):
     coefs = my_cwt(LFP, freqs, dt)
     tfPow = (lin_combination*np.abs(coefs).T).T
 
-    output = butter_lowpass_filter(tfPow.mean(axis=0), 1./smoothing, 1./dt, order=5)
+    # output = butter_lowpass_filter(tfPow.mean(axis=0), 1./smoothing, 1./dt, order=5)
+    output = get_time_variability(tfPow.mean(axis=0), dt, T=5e-3)
+    output = butter_lowpass_filter(output, 1./smoothing, 1./dt, order=5)
     
     return output
      
@@ -56,7 +65,6 @@ def fit_2gaussians(pLFP, n=1000, nbins=200):
     
     return (w, 1-w), (m1, m2), (s1, s2)
 
-
 def determine_threshold(weigths, means, stds, with_amp=False):
     """ Gives the thresholds given the Gaussian Mixture"""
     
@@ -75,4 +83,55 @@ def determine_threshold(weigths, means, stds, with_amp=False):
         return threshold, amp
     else:
         return threshold
+
+    
+def determine_threshold_on_sliding_window(t, pLFP, sliding_window=20):
+
+    dt = t[1]-t[0]
+    islw = int(sliding_window/dt)
+    THRESHOLDS, INTERVALS = [], []
+    i=0
+    while i<len(t):
+        INTERVALS.append([t[i], t[i+islw]])
+        weights, means, stds = fit_2gaussians(pLFP[i:i+islw])
+        THRESHOLDS.append(determine_threshold(weigths, means, stds))
+        i+=islw
+    INTERVALS[-1][1] = np.inf
+
+    # now making a function out of this
+    return threshold_func
+
+if __name__=='__main__':
+    
+    import sys
+    sys.path.append('../..')
+    from data_analysis.IO.load_data import load_file, get_formated_data
+    t, [Vm, _, _, _, _, _, LFP] = load_file('/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2016_12_6/16_48_19_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin',
+                                            zoom=[0, 20])
+    weights, means, stds = fit_2gaussians(LFP, n=300)
+    
+    # for w, m, s in zip(weights, means, stds):
+    #     plt.plot(w*gaussian(vbins, m, s), vbins, ':', lw=1, color='k')
+    # # find threshold as the interesction of the two Gaussians
+    # threshold_up, threshold_down = determine_thresholds(weights, means, stds)    
+    # Up_intervals, Down_intervals = get_state_intervals(Vm[t<tstop], threshold,
+    #                                                    threshold_up, threshold_down,
+    #                                                    t[-1]-t[0],
+    #                                                    min_duration_criteria=100e-3)
+    
+    # t1, t2 = loop_over_sliding_window(data)
+    # UD_transitions, DU_transitions = state_classification.get_transition_times(data['t'], data['Vm'], t1, t2)
+    # import matplotlib.pylab as plt
+    # T0, T1 = 50., 70.
+    # zoom = (data['t']>T0) & (data['t']<T1)
+    # plt.plot(data['t'][zoom], data['Vm'][zoom], 'k-')
+    # plt.plot(data['t'][zoom], t1[zoom], 'r-')
+    # plt.plot(data['t'][zoom], t2[zoom], 'b-')
+    # for tt in UD_transitions[(UD_transitions>T0) & (UD_transitions<T1)]:
+    #     plt.plot([tt, tt], [data['Vm'].min(), data['Vm'].max()], 'r-', lw=2)
+    # for tt in DU_transitions[(DU_transitions>T0) & (DU_transitions<T1)]:
+    #     plt.plot([tt, tt], [data['Vm'].min(), data['Vm'].max()], 'b-', lw=2)
+    # plt.show()
+    
+
 

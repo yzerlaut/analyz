@@ -60,7 +60,70 @@ def determine_threshold(weigths, means, stds, with_amp=False, distance_to_min_cr
     else:
         return threshold
 
-def get_state_intervals(t, Vm, threshold,
+def determine_thresholds(weigths, means, stds):
+    """ Gives the thresholds given the Gaussian Mixture"""
+    
+    i0, i1 = np.argmin(means), np.argmax(means) # find the upper and lower distrib
+
+    return means[i1]-stds[i1], means[i1]-stds[i1]
+
+
+def get_state_intervals(Vm, threshold_up, threshold_down, dt,
+                        fluct_duration_criteria=30e-3,
+                        min_duration_criteria=100e-3):
+    """
+    single threshold strategy for state transition characterization
+    with a duration criteria
+
+    """
+
+    Up_intervals, Down_intervals = [], []
+
+    #### =========== #####
+    ###   Up states   ###
+    #### =========== #####
+
+    iup = np.argwhere(Vm>threshold_up) # basic characterization: being above threshold
+    i=0
+    while i<len(iup):
+        i0 = i
+        while (iup[i+1]-iup[i])<int(fluct_duration_criteria/dt):
+            # meaning we're in the same up state
+            i+=1
+        # then this interval is finished
+        print(i)
+        Up_intervals.append([iup[i0], iup[i]])
+
+    # then removing too short intervals
+    i = 0
+    while i<len(Up_intervals):
+        if (Up_intervals[i][1]-Up_intervals[i][1])<min_duration_criteria:
+            Up_intervals.remove(Up_intervals[i])
+
+    #### =========== #####
+    ###   Down states   ###
+    #### =========== #####
+
+    idown = np.argwhere(Vm<threshold_down) # basic characterization: being below threshold
+    i=0
+    while i<len(idown):
+        i0 = i
+        while (idown[i+1]-idown[i])<int(fluct_duration_criteria/dt):
+            # meaning we're in the same down state
+            i+=1
+        # then this interval is finished
+        print(i)
+        Down_intervals.append([idown[i0], idown[i]])
+
+    # then removing too short intervals
+    i = 0
+    while i<len(Down_intervals):
+        if (Down_intervals[i][1]-Down_intervals[i][1])<min_duration_criteria:
+            Down_intervals.remove(Down_intervals[i])
+
+    return Up_intervals, Down_intervals
+
+def get_state_intervals2(t, Vm, threshold,
                         duration_criteria=100e-3):
     """
     single threshold strategy for state transition characterization
@@ -128,5 +191,19 @@ def get_state_intervals(t, Vm, threshold,
                 # and the next down state as it is merged with the previous one !
                 Down_intervals[idown-1][1] = Down_intervals[idown][1]
                 Down_intervals.remove(Down_intervals[idown])
-            
+                
     return Up_intervals, Down_intervals
+                
+if __name__=='__main__':
+    
+    import sys
+    sys.path.append('../..')
+    from data_analysis.IO.load_data import load_file, get_formated_data
+    t, [Vm, _, _, _, _, LFP] = load_file('/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2016_12_6/16_48_19_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin', zoom=[0, 20])
+    weights, means, stds = fit_2gaussians(Vm)
+    threshold_up, threshold_down = determine_thresholds(weights, means, stds)    
+    Up_intervals, Down_intervals = get_state_intervals(Vm,
+                                                       threshold_up, threshold_down,
+                                                       t[-1]-t[0],
+                                                       min_duration_criteria=100e-3)
+    print(Up_intervals, Down_intervals)
