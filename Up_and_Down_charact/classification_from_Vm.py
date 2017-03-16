@@ -40,11 +40,11 @@ def fit_2gaussians(Vm, n=1000, upper_bound=-35, nbins=100):
     return (w, 1-w), (m1, m2), (s1, s2)
 
 def passing_the_up_and_down_states_criteria(weigths, means, stds,
-                                            std_ratio=0.5):
+                                            std_ratio=1./3., std_shift=3.):
     
     i0, i1 = np.argmin(means), np.argmax(means) # find the upper and lower distrib
     
-    if (stds[i0]/stds[i1]<std_ratio) and (means[i1]>means[i0]+2.*stds[i0]):
+    if (stds[i0]/stds[i1]<std_ratio) and (means[i1]>means[i0]+std_shift*stds[i0]):
         return True
     else:
         return False
@@ -114,7 +114,7 @@ def get_thresholded_intervals(t, Vm, threshold, where='above-and-below',\
         print('need to specify a valid setting for the interval you want !')
 
 def apply_duration_criteria(state_interval,
-                            min_duration=100e-3, max_duration=1500e-3):
+                            min_duration=150e-3, max_duration=1500e-3):
     i=0
     while i<len(state_interval):
         length = state_interval[i][1]-state_interval[i][0]
@@ -124,40 +124,42 @@ def apply_duration_criteria(state_interval,
         i+=1
     return state_interval
 
+
 def matching_cond_for_duplicates(ref_interval, test_interval):
-    t01, t02 = ref_interval
-    t11, t12 = test_interval
-    if (((t11>t01) and (t11<=t02)) or \
-        ((t12>t01) and (t12<=t02)) or \
-        ((t01>t11) and (t01<=t12)) or \
-        ((t02>t11) and (t02<=t12))):
-        return min([t01, t11]), max([t02, t12])
+    tr1, tr2 = ref_interval
+    tt1, tt2 = test_interval
+    if (((tt1>=tr1) and (tt1<=tr2)) or \
+        ((tt2>=tr1) and (tt2<=tr2)) or \
+        ((tr1>=tt1) and (tr1<=tt2)) or \
+        ((tr2>=tt1) and (tr2<=tt2))):
+        # return tr1, tr2
+        return [min([tr1, tt1]), max([tr2, tt2])] # merging intervals
     else:
         return None
-    
+
 def remove_duplicates(state_interval):
     i=0
     new_intervals = []
     while len(state_interval)>0:
         # the strategy is to put the intervals into the "duplicates"
         # and remove them from the main array
-        to_remove = []
+        to_remove = [0]
         for i in range(1, len(state_interval)):
             new = matching_cond_for_duplicates(state_interval[0], state_interval[i])
             if new is not None:
                 to_remove.append(i) # we store the one to remove
                 state_interval[0] = new # we replace the standard interval with updated values
-        for i in to_remove[::-1]:
-            state_interval.remove(state_interval[i])
         new_intervals.append(state_interval[0])
-        state_interval.remove(state_interval[0])
-        
+        for i in to_remove[::-1]: # need to start from the end
+            state_interval.pop(i) # we remove
     return new_intervals
 
 def procedure_over_sliding_window(t, Vm,
                                   sliding_window=5, sliding_shift=.5):
     """
-    Goes over a sliding window and 
+    Goes over a sliding window, fits two gaussians, decide whether 
+    the distrib is bimodal enough to be likely to have up and down
+    states, if yes, classifiesthe state
     """
     dt = t[1]-t[0]
     isl, iss = int(sliding_window/dt), int(sliding_shift/dt)
@@ -179,6 +181,8 @@ def procedure_over_sliding_window(t, Vm,
     # remove duplicates
     Up_intervals = remove_duplicates(Up_intervals)
     Down_intervals = remove_duplicates(Down_intervals)
+    Up_intervals = remove_duplicates(Up_intervals)
+    Down_intervals = remove_duplicates(Down_intervals)
     
     return Up_intervals, Down_intervals
     
@@ -189,10 +193,12 @@ if __name__=='__main__':
     sys.path.append('../..')
     from data_analysis.IO.load_data import load_file, get_formated_data
     from graphs.my_graph import show
-    tstop = 40
-    t, [Vm, _, _, _, _, LFP] = load_file(\
-          '/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2016_12_6/16_48_19_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin',
-                                         zoom=[0, tstop])
+    t1, t2 = 17, 26
+    t, DATA = load_file(\
+          # '/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2016_12_6/16_48_19_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin',
+          '/Users/yzerlaut/DATA/Exps_Ste_and_Yann/2017_01_17/16_17_12_VM-FEEDBACK--OSTIM-AT-VARIOUS-DELAYS.bin',
+                                         zoom=[t1, t2])
+    Vm = DATA[0]
     vbins = np.linspace(Vm.min(), -30)
     
     Up_intervals, Down_intervals = procedure_over_sliding_window(t, Vm)
@@ -201,7 +207,7 @@ if __name__=='__main__':
     plt.figure(figsize=(8,3))
     plt.style.use('ggplot')
     plt.subplot2grid((1,6), (0,0), colspan=5)
-    plt.plot(t[t<tstop], Vm[t<tstop], lw=1)
+    plt.plot(t, Vm, lw=1)
     plt.ylim([vbins[0],vbins[-1]])
     plt.ylabel('$V_m$ (mV)')
     for (t1, t2) in Up_intervals:
