@@ -1,6 +1,21 @@
+"""
+taken from:
+http://codereview.stackexchange.com/questions/120802/recursively-save-python-dictionaries-to-hdf5-files-using-h5py?newreg=f582be64155a4c0f989a2aa05ee67efe
+"""
+
 import numpy as np
 import h5py
 import os
+
+def make_writable_dict(dic):
+    dic2 = dic.copy()
+    for key, value in dic.items():
+        if (type(value)==float) or (type(value)==int):
+            dic2[key] = np.ones(1)*value
+        if type(value)==list:
+            dic2[key] = np.array(value)
+    return dic2
+
 def save_dict_to_hdf5(dic, filename):
     """
     ....
@@ -44,6 +59,7 @@ if __name__ == '__main__':
     data = {'x': 'astring',
             'y': np.arange(10),
             'd': {'z': np.ones((2,3)),
+                  'sdkfjh':'',
                   'b': b'bytestring'}}
     print(data)
     filename = 'test.h5'
