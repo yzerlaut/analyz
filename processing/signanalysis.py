@@ -30,12 +30,16 @@ def crosscorrel(signal1, signal2, tmax, dt):
     returns : np.array()
     take two signals, and returns their crosscorrelation function 
     """
-    Signal1 = (signal1-signal1.mean())/signal1.std()
-    Signal2 = (signal2-signal2.mean())/signal2.mean()
+    if len(signal1)!=len(signal2):
+        print('Need two arrays of the same size !!')
+        
     steps = int(tmax/dt) # number of steps to sum on
-    cr = np.correlate(Signal1[steps:],Signal2)/steps
-    time_shift = np.arange(len(cr))*dt
-    return cr/cr.max(), time_shift
+    time_shift = dt*np.concatenate([-np.arange(1, steps)[::-1], np.arange(steps)])
+    CCF = np.zeros(len(time_shift))
+    for i in np.arange(steps):
+        ccf = np.corrcoef(signal1[:len(signal1)-i], signal2[i:])
+        CCF[steps-1+i], CCF[steps-1-i] = ccf[0,1], ccf[1,0]
+    return CCF, time_shift
 
 def crosscorrel_norm(signal1,signal2):
     """
