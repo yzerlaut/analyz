@@ -19,21 +19,23 @@ def autocorrel(signal, tmax, dt):
      function between [0,tstop] (normalized) !!
     """
     steps = int(tmax/dt) # number of steps to sum on
-    signal = (signal-signal.mean())/signal.std()
-    cr = np.correlate(signal[steps:],signal)/steps
+    Signal = (signal-signal.mean())/signal.std()
+    cr = np.correlate(Signal[steps:],Signal)/steps
     time_shift = np.arange(len(cr))*dt
     return cr/cr.max(), time_shift
 
-def crosscorrel(signal1,signal2):
+def crosscorrel(signal1, signal2, tmax, dt):
     """
     argument : signal1 (np.array()), signal2 (np.array())
     returns : np.array()
     take two signals, and returns their crosscorrelation function 
     """
-    signal1 = (signal1-signal1.mean())
-    signal2 = (signal2-signal2.mean())
-    cr = np.correlate(signal1,signal2,"full")/signal1.std()/signal2.std()
-    return cr
+    Signal1 = (signal1-signal1.mean())/signal1.std()
+    Signal2 = (signal2-signal2.mean())/signal2.mean()
+    steps = int(tmax/dt) # number of steps to sum on
+    cr = np.correlate(Signal1[steps:],Signal2)/steps
+    time_shift = np.arange(len(cr))*dt
+    return cr/cr.max(), time_shift
 
 def crosscorrel_norm(signal1,signal2):
     """
