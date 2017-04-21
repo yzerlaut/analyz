@@ -12,16 +12,20 @@ def translate(args):
     
     Block = AxonIO(args.filename).read_block(lazy=False, cascade=True)
     RT = Block.rec_datetime #
-    
-    data['day'] =  ("%04d" % RT.year) + '_' + ("%02d" % RT.month) + '_' + ("%02d" % RT.day) 
-    data['time'] = ("%02d" % RT.hour) + '_' + ("%02d" % RT.minute) + '_' + ("%02d" % RT.second)
-    data['dt'] =  np.array([Block.segments[0].analogsignals[0].sampling_period])
 
-    if not os.path.exists(data['day']):
-        os.makedirs(data['day'])
+    params = {} # parameters stored here
+    # data['day'] =  ("%04d" % RT.year) + '_' + ("%02d" % RT.month) + '_' + ("%02d" % RT.day) 
+    # data['time'] = ("%02d" % RT.hour) + '_' + ("%02d" % RT.minute) + '_' + ("%02d" % RT.second)
+    # data['dt'] =  np.array([Block.segments[0].analogsignals[0].sampling_period])
+    params['day'] =  ("%04d" % RT.year) + '_' + ("%02d" % RT.month) + '_' + ("%02d" % RT.day) 
+    params['time'] = ("%02d" % RT.hour) + '_' + ("%02d" % RT.minute) + '_' + ("%02d" % RT.second)
+    params['dt'] =  np.array([Block.segments[0].analogsignals[0].sampling_period])
+
+    if not os.path.exists(params['day']):
+        os.makedirs(params['day'])
 
     protocol = args.protocol
-    args.filename = data['day']+os.path.sep+data['time']+'_'+protocol+'.h5'
+    args.filename = params['day']+os.path.sep+params['time']+'_'+protocol+'.h5'
 
     if args.new_keys is not None:
         if len(args.new_keys)==len(keys):
@@ -33,7 +37,7 @@ def translate(args):
         # if only one episode, we swith to continuous
         args.force_continuous = True
 
-    t = np.arange(len(Block.segments[0].analogsignals[0]))*data['dt']
+    t = np.arange(len(Block.segments[0].analogsignals[0]))*params['dt']
     cond = (t>=args.tstart) & (t<=args.tend)
         
     for i in range(len(keys)):
@@ -42,8 +46,8 @@ def translate(args):
              data[keys[i]].append(Block.segments[s].analogsignals[i][cond])
         if args.force_continuous:
             data[keys[i]] = np.array(data[keys[i]]).flatten()
-        data[keys[i]+'_unit'] = Block.segments[s].analogsignals[i][0].dimensionality.string
-        
+        params[keys[i]+'_unit'] = Block.segments[s].analogsignals[i][0].dimensionality.string
+    data['params'] = params
     save_dict_to_hdf5(data, args.filename)
 
     
