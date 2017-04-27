@@ -10,15 +10,34 @@ from data_analysis.freq_analysis.wavelet_transform import my_cwt
 from data_analysis.processing.filters import butter_bandpass_filter, butter_lowpass_filter
 from data_analysis.processing.signanalysis import gaussian_smoothing
 
-def Mukovski_method(data, key='ExtraCort', g_band=[20, 100],
-                    std_window=5e-3, smoothing=50e-3,
-                    min_duration=100e-3, max_duration=np.inf):
+def get_gaussian_mixture_for_several_data(DATA, key='ExtraCort', std_window=5e-3):
+    array = np.empty(0)
+    for data in DATA:
+        compute_smooth_time_varying_std(data, std_window=std_window)
+        array = np.concatenate([array, data[key+'_var_smoothed']])
+        # get the gaussian mixture
+    W, M, S = fit_2gaussians(array, n=1000, nbins=200)
+    for data in DATA:
+        data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S'] = W, M, S
+    
+def get_threshold_given_gaussian_mixture(data, key='ExtraCort'):
+    """
+    this is the part that is different from Mukovski et al.
+    """
+    W, M, S = data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S']
+    i0 = np.argmin(M) # the lower gaussian is the quiescent one
+    data[key+'_var_threshold_low'] = M[i0]
+    data[key+'_var_threshold'] = M[i0]+S[i0]
 
+
+def compute_smooth_time_varying_std(data, key='ExtraCort',
+                                    std_window=5e-3, smoothing=50e-3,
+                                    g_band=[20, 100]):
+    
     # band-pass filter
     data[key+'_filtered'] = butter_bandpass_filter(data[key],
                                                    g_band[0], g_band[1],
                                                    1./data['dt'], order=3)
-    # now calculating the variance of the signal over a sliding window
     n = int(std_window/data['dt'])
     t, var = [], []
     n1, n2 = 0, n
@@ -34,12 +53,26 @@ def Mukovski_method(data, key='ExtraCort', g_band=[20, 100],
     nsmooth = int(smoothing/data['dt_var'])
     data[key+'_var_smoothed'] = gaussian_smoothing(data[key+'_var'], nsmooth)
 
-    # get the gaussian mixture
-    W, M, S = fit_2gaussians(data[key+'_var_smoothed'], n=1000, nbins=200)
-    i0 = np.argmin(M) # the lower gaussian is the quiescent one
-    data[key+'_var_threshold'] = M[i0]+S[i0]
-    data[key+'_var_threshold_low'] = M[i0]
-    data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S'] = W, M, S
+    
+    
+def Mukovski_method(data, key='ExtraCort',
+                    min_duration=100e-3, max_duration=np.inf,
+                    std_window=5e-3, smoothing=50e-3,
+                    GAUSSIAN_MIXTURE=None):
+
+    
+    if GAUSSIAN_MIXTURE is not None:
+        W, M, S = GAUSSIAN_MIXTURE
+    else:
+        # the time-varying std was not computed before 
+        compute_smooth_time_varying_std(data, key=key,
+                                        std_window=std_window,
+                                        smoothing=smoothing)
+        # get the gaussian mixture
+        W, M, S = fit_2gaussians(data[key+'_var_smoothed'], n=1000, nbins=200)
+        data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S'] = W, M, S
+        
+    get_threshold_given_gaussian_mixture(data, key=key)
 
     data['intervals'] = get_thresholded_intervals(data['t_var'],
                                                   data[key+'_var_smoothed'],
@@ -128,7 +161,6 @@ def determine_threshold(weigths, means, stds, with_amp=False):
     else:
         return threshold
 
-    
 def determine_threshold_on_sliding_window(t, pLFP, sliding_window=20):
 
     dt = t[1]-t[0]
