@@ -36,7 +36,7 @@ http://docs.scipy.org/doc/numpy/reference/routines.fft.html
 import numpy as np
 
 def time_to_freq(N, dt):
-    return np.fft.rfftfreq(N,d=dt)
+    return np.array(np.fft.rfftfreq(N,d=dt))
 
 def FT(signal, N, dt):
     ft = np.fft.rfft(signal)*dt

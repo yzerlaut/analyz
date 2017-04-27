@@ -5,10 +5,52 @@ import numpy as np
 from scipy.optimize import minimize
 import sys, pathlib
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
-from data_analysis.Up_and_Down_charact.classification_from_Vm import get_state_intervals, gaussian
+from data_analysis.Up_and_Down_charact.classification_from_Vm import gaussian, get_thresholded_intervals, apply_duration_criteria
 from data_analysis.freq_analysis.wavelet_transform import my_cwt
-from data_analysis.processing.signanalysis import butter_lowpass_filter
+from data_analysis.processing.filters import butter_bandpass_filter, butter_lowpass_filter
+from data_analysis.processing.signanalysis import gaussian_smoothing
 
+def Mukovski_method(data, key='ExtraCort', g_band=[20, 100],
+                    std_window=5e-3, smoothing=50e-3,
+                    min_duration=100e-3, max_duration=np.inf):
+
+    # band-pass filter
+    data[key+'_filtered'] = butter_bandpass_filter(data[key],
+                                                   g_band[0], g_band[1],
+                                                   1./data['dt'], order=3)
+    # now calculating the variance of the signal over a sliding window
+    n = int(std_window/data['dt'])
+    t, var = [], []
+    n1, n2 = 0, n
+    while n2<len(data['t']):
+        t.append(data['t'][int(n1+n/2)])
+        var.append(data[key+'_filtered'][n1:n2].std())
+        n1, n2 = int(n1+n/2), int(n2+n/2)
+    data['t_var'] = np.array(t)
+    data['dt_var'] = data['t_var'][1]-data['t_var'][0]
+    data[key+'_var'] = np.array(var)
+    
+    # smooth the time-varying fluct.
+    nsmooth = int(smoothing/data['dt_var'])
+    data[key+'_var_smoothed'] = gaussian_smoothing(data[key+'_var'], nsmooth)
+
+    # get the gaussian mixture
+    W, M, S = fit_2gaussians(data[key+'_var_smoothed'], n=1000, nbins=200)
+    i0 = np.argmin(M) # the lower gaussian is the quiescent one
+    data[key+'_var_threshold'] = M[i0]+S[i0]
+    data[key+'_var_threshold_low'] = M[i0]
+    data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S'] = W, M, S
+
+    data['intervals'] = get_thresholded_intervals(data['t_var'],
+                                                  data[key+'_var_smoothed'],
+                                                  data[key+'_var_threshold'],
+                                                  where='above')
+
+    data['intervals'] = apply_duration_criteria(data['intervals'],
+                                                min_duration=min_duration,
+                                                max_duration=max_duration)
+    
+    
 def get_time_variability(Pow_vs_t, dt, T=10e-3):
     iT = int(T/dt)
     var = 0.*Pow_vs_t
@@ -41,7 +83,9 @@ def fit_2gaussians(pLFP, n=1000, nbins=200):
     returns the weights, means and standard deviation of the
     gaussian functions
     """
-    vbins = np.linspace(pLFP.min(), pLFP.max(), nbins) # discretization of Vm for histogram
+    dL = (pLFP.max()-pLFP.min())
+    # discretization of Vm for histogram
+    vbins = np.linspace(pLFP.min()-pLFP.std(), pLFP.max()+pLFP.std()/2., nbins) 
     hist, be = np.histogram(pLFP, vbins, normed=True) # normalized distribution
     vv = 0.5*(be[1:]+be[:-1]) # input vector is center of bin edges
     
@@ -52,13 +96,13 @@ def fit_2gaussians(pLFP, n=1000, nbins=200):
 
     # initial values
     mean0, std0 = pLFP.mean(), pLFP.std()
-    w, m1, m2, s1, s2 = 0.5, mean0-std0, mean0+std0, std0/2., std0/2.
+    w, m1, m2, s1, s2 = 0.5, mean0-std0, mean0+std0, std0/4., std0
     
     res = minimize(to_minimize, [w, m1, m2, s1, s2],
                    method='L-BFGS-B',
                    bounds = [(.05, .95),
                              (vv.min(), vv.max()), (vv.min(), vv.max()),
-                             (1e-2, vv.max()-vv.min()), (1e-2, vv.max()-vv.min())],
+                             (pLFP.std()/100., 10*pLFP.std()), (pLFP.std()/100., 10*pLFP.std())],
                    options={'maxiter':n})
 
     w, m1, m2, s1, s2 = res.x
