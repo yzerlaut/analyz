@@ -25,10 +25,19 @@ def get_threshold_given_gaussian_mixture(data, key='ExtraCort'):
     this is the part that is different from Mukovski et al.
     """
     W, M, S = data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S']
-    i0 = np.argmin(M) # the lower gaussian is the quiescent one
-    data[key+'_var_threshold_low'] = M[i0]
-    data[key+'_var_threshold'] = M[i0]+S[i0]
 
+
+    i0, i1 = np.argmin(data[key+'_var_M']), np.argmax(data[key+'_var_M']) # find the upper and lower distrib
+    # the lower gaussian is the quiescent one, Up states are above that one
+    data[key+'_var_threshold'] = M[i0]+S[i0]
+    
+    # now down states are below the intersection between the two distrib
+    vv = np.linspace(data[key+'_var_M'][i0], data[key+'_var_M'][i1], 1e2) # the point is in between the two means
+    gaussian1 = data[key+'_var_W'][i0]*gaussian(vv, data[key+'_var_M'][i0], data[key+'_var_S'][i0])
+    gaussian2 = data[key+'_var_W'][i1]*gaussian(vv, data[key+'_var_M'][i1], data[key+'_var_S'][i1])
+    ii = np.argmin(np.power(gaussian1-gaussian2, 2))
+    data[key+'_var_threshold_low'] = vv[ii]
+    
 
 def compute_smooth_time_varying_std(data, key='ExtraCort',
                                     std_window=5e-3, smoothing=50e-3,
@@ -58,6 +67,7 @@ def compute_smooth_time_varying_std(data, key='ExtraCort',
 def Mukovski_method(data, key='ExtraCort',
                     min_duration=100e-3, max_duration=np.inf,
                     std_window=5e-3, smoothing=50e-3,
+                    with_down_intervals=False,
                     GAUSSIAN_MIXTURE=None):
 
     
@@ -82,7 +92,12 @@ def Mukovski_method(data, key='ExtraCort',
     data['intervals'] = apply_duration_criteria(data['intervals'],
                                                 min_duration=min_duration,
                                                 max_duration=max_duration)
-    
+
+    if with_down_intervals:
+        data['down_intervals'] = get_thresholded_intervals(data['t_var'],
+                                                           data[key+'_var_smoothed'],
+                                                           data[key+'_var_threshold_low'],
+                                                           where='below')
     
 def get_time_variability(Pow_vs_t, dt, T=10e-3):
     iT = int(T/dt)
