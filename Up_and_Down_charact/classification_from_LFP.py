@@ -5,10 +5,100 @@ import numpy as np
 from scipy.optimize import minimize
 import sys, pathlib
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
-from data_analysis.Up_and_Down_charact.classification_from_Vm import get_state_intervals, gaussian
+from data_analysis.Up_and_Down_charact.classification_from_Vm import gaussian, get_thresholded_intervals, apply_duration_criteria
 from data_analysis.freq_analysis.wavelet_transform import my_cwt
-from data_analysis.processing.signanalysis import butter_lowpass_filter
+from data_analysis.processing.filters import butter_bandpass_filter, butter_lowpass_filter
+from data_analysis.processing.signanalysis import gaussian_smoothing
 
+def get_gaussian_mixture_for_several_data(DATA, key='ExtraCort', std_window=5e-3):
+    array = np.empty(0)
+    for data in DATA:
+        compute_smooth_time_varying_std(data, std_window=std_window)
+        array = np.concatenate([array, data[key+'_var_smoothed']])
+        # get the gaussian mixture
+    W, M, S = fit_2gaussians(array, n=1000, nbins=200)
+    for data in DATA:
+        data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S'] = W, M, S
+    
+def get_threshold_given_gaussian_mixture(data, key='ExtraCort'):
+    """
+    this is the part that is different from Mukovski et al.
+    """
+    W, M, S = data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S']
+
+
+    i0, i1 = np.argmin(data[key+'_var_M']), np.argmax(data[key+'_var_M']) # find the upper and lower distrib
+    # the lower gaussian is the quiescent one, Up states are above that one
+    data[key+'_var_threshold'] = M[i0]+S[i0]
+    
+    # now down states are below the intersection between the two distrib
+    vv = np.linspace(data[key+'_var_M'][i0], data[key+'_var_M'][i1], 1e2) # the point is in between the two means
+    gaussian1 = data[key+'_var_W'][i0]*gaussian(vv, data[key+'_var_M'][i0], data[key+'_var_S'][i0])
+    gaussian2 = data[key+'_var_W'][i1]*gaussian(vv, data[key+'_var_M'][i1], data[key+'_var_S'][i1])
+    ii = np.argmin(np.power(gaussian1-gaussian2, 2))
+    data[key+'_var_threshold_low'] = vv[ii]
+    
+
+def compute_smooth_time_varying_std(data, key='ExtraCort',
+                                    std_window=5e-3, smoothing=50e-3,
+                                    g_band=[20, 100]):
+    
+    # band-pass filter
+    data[key+'_filtered'] = butter_bandpass_filter(data[key],
+                                                   g_band[0], g_band[1],
+                                                   1./data['dt'], order=3)
+    n = int(std_window/data['dt'])
+    t, var = [], []
+    n1, n2 = 0, n
+    while n2<len(data['t']):
+        t.append(data['t'][int(n1+n/2)])
+        var.append(data[key+'_filtered'][n1:n2].std())
+        n1, n2 = int(n1+n/2), int(n2+n/2)
+    data['t_var'] = np.array(t)
+    data['dt_var'] = data['t_var'][1]-data['t_var'][0]
+    data[key+'_var'] = np.array(var)
+    
+    # smooth the time-varying fluct.
+    nsmooth = int(smoothing/data['dt_var'])
+    data[key+'_var_smoothed'] = gaussian_smoothing(data[key+'_var'], nsmooth)
+
+    
+    
+def Mukovski_method(data, key='ExtraCort',
+                    min_duration=100e-3, max_duration=np.inf,
+                    std_window=5e-3, smoothing=50e-3,
+                    with_down_intervals=False,
+                    GAUSSIAN_MIXTURE=None):
+
+    
+    if GAUSSIAN_MIXTURE is not None:
+        W, M, S = GAUSSIAN_MIXTURE
+    else:
+        # the time-varying std was not computed before 
+        compute_smooth_time_varying_std(data, key=key,
+                                        std_window=std_window,
+                                        smoothing=smoothing)
+        # get the gaussian mixture
+        W, M, S = fit_2gaussians(data[key+'_var_smoothed'], n=1000, nbins=200)
+        data[key+'_var_W'], data[key+'_var_M'], data[key+'_var_S'] = W, M, S
+        
+    get_threshold_given_gaussian_mixture(data, key=key)
+
+    data['intervals'] = get_thresholded_intervals(data['t_var'],
+                                                  data[key+'_var_smoothed'],
+                                                  data[key+'_var_threshold'],
+                                                  where='above')
+
+    data['intervals'] = apply_duration_criteria(data['intervals'],
+                                                min_duration=min_duration,
+                                                max_duration=max_duration)
+
+    if with_down_intervals:
+        data['down_intervals'] = get_thresholded_intervals(data['t_var'],
+                                                           data[key+'_var_smoothed'],
+                                                           data[key+'_var_threshold_low'],
+                                                           where='below')
+    
 def get_time_variability(Pow_vs_t, dt, T=10e-3):
     iT = int(T/dt)
     var = 0.*Pow_vs_t
@@ -41,7 +131,9 @@ def fit_2gaussians(pLFP, n=1000, nbins=200):
     returns the weights, means and standard deviation of the
     gaussian functions
     """
-    vbins = np.linspace(pLFP.min(), pLFP.max(), nbins) # discretization of Vm for histogram
+    dL = (pLFP.max()-pLFP.min())
+    # discretization of Vm for histogram
+    vbins = np.linspace(pLFP.min()-pLFP.std(), pLFP.max()+pLFP.std()/2., nbins) 
     hist, be = np.histogram(pLFP, vbins, normed=True) # normalized distribution
     vv = 0.5*(be[1:]+be[:-1]) # input vector is center of bin edges
     
@@ -52,13 +144,13 @@ def fit_2gaussians(pLFP, n=1000, nbins=200):
 
     # initial values
     mean0, std0 = pLFP.mean(), pLFP.std()
-    w, m1, m2, s1, s2 = 0.5, mean0-std0, mean0+std0, std0/2., std0/2.
+    w, m1, m2, s1, s2 = 0.5, mean0-std0, mean0+std0, std0/4., std0
     
     res = minimize(to_minimize, [w, m1, m2, s1, s2],
                    method='L-BFGS-B',
                    bounds = [(.05, .95),
                              (vv.min(), vv.max()), (vv.min(), vv.max()),
-                             (1e-2, vv.max()-vv.min()), (1e-2, vv.max()-vv.min())],
+                             (pLFP.std()/100., 10*pLFP.std()), (pLFP.std()/100., 10*pLFP.std())],
                    options={'maxiter':n})
 
     w, m1, m2, s1, s2 = res.x
@@ -84,7 +176,6 @@ def determine_threshold(weigths, means, stds, with_amp=False):
     else:
         return threshold
 
-    
 def determine_threshold_on_sliding_window(t, pLFP, sliding_window=20):
 
     dt = t[1]-t[0]
