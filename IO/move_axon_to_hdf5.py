@@ -14,9 +14,6 @@ def translate(args):
     RT = Block.rec_datetime #
 
     params = {} # parameters stored here
-    # data['day'] =  ("%04d" % RT.year) + '_' + ("%02d" % RT.month) + '_' + ("%02d" % RT.day) 
-    # data['time'] = ("%02d" % RT.hour) + '_' + ("%02d" % RT.minute) + '_' + ("%02d" % RT.second)
-    # data['dt'] =  np.array([Block.segments[0].analogsignals[0].sampling_period])
     params['day'] =  ("%04d" % RT.year) + '_' + ("%02d" % RT.month) + '_' + ("%02d" % RT.day) 
     params['time'] = ("%02d" % RT.hour) + '_' + ("%02d" % RT.minute) + '_' + ("%02d" % RT.second)
     params['dt'] =  np.array([Block.segments[0].analogsignals[0].sampling_period])
@@ -48,6 +45,7 @@ def translate(args):
             data[keys[i]] = np.array(data[keys[i]]).flatten()
         params[keys[i]+'_unit'] = Block.segments[s].analogsignals[i][0].dimensionality.string
     data['params'] = params
+    data['t'] = t
     save_dict_to_hdf5(data, args.filename)
 
     
