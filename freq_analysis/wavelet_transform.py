@@ -112,6 +112,40 @@ def illustration_plot(t, freqs, data, coefs, dt, tstop, freq1, freq2, freq3):
     plt.xlabel(' max. \n power \n (a.u.)');
     return fig
 
+def time_freq_plot(t, freqs, data, coefs):
+    """
+    a plot to illustrate the output of the wavelet analysis
+    """
+    dt = t[1]-t[0]
+    import matplotlib.pylab as plt
+    with plt.style.use('ggplot'):
+        fig = plt.figure(figsize=(8,5))
+        plt.subplots_adjust(wspace=.8, hspace=.5, bottom=.2)
+        # signal plot
+        plt.subplot2grid((3, 8), (0,0), colspan=6)
+        plt.plot(1e3*t, data, 'k-', lw=2)
+        plt.ylabel('signal')
+        plt.xlim([1e3*t[0], 1e3*t[-1]])
+        # time frequency power plot
+        ax1 = plt.subplot2grid((3, 8), (1,0), rowspan=2, colspan=6)
+        c = plt.contourf(1e3*t, freqs, coefs, cmap='PRGn', aspect='auto')
+        plt.xlabel('time (ms)')
+        plt.ylabel('frequency (Hz)')
+        # inset with legend
+        acb = plt.axes([.4, .4, .02, .2])
+        plt.colorbar(c, cax=acb, label='coeffs (a.u.)', ticks=[-1, 0, 1])
+        # mean power plot over intervals
+        plt.subplot2grid((3, 8), (1, 6), rowspan=2)
+        plt.barh(freqs, np.power(coefs,2).mean(axis=1)*dt)
+        plt.xticks([]);
+        plt.xlabel(' mean \n power \n (a.u.)')
+        # max of power over intervals
+        plt.subplot2grid((3, 8), (1, 7), rowspan=2)
+        plt.barh(freqs, np.power(coefs,2).max(axis=1)*dt)
+        plt.xticks([]);
+        plt.xlabel(' max. \n power \n (a.u.)');
+        return fig
+
 if __name__ == '__main__':
 
     import numpy as np
@@ -140,4 +174,5 @@ if __name__ == '__main__':
     coefs = my_cwt(data, freqs, dt)
 
     illustration_plot(t, freqs, data, coefs, dt, tstop, freq1, freq2, freq3)
+    # time_freq_plot(t, freqs, data, coefs)
     plt.show()

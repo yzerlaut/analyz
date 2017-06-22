@@ -29,7 +29,6 @@ def get_threshold_given_gaussian_mixture(data, key='ExtraCort'):
 
     i0, i1 = np.argmin(data[key+'_var_M']), np.argmax(data[key+'_var_M']) # find the upper and lower distrib
     # the lower gaussian is the quiescent one, Up states are above that one
-    data[key+'_var_threshold'] = M[i0]+S[i0]
     
     # now down states are below the intersection between the two distrib
     vv = np.linspace(data[key+'_var_M'][i0], data[key+'_var_M'][i1], 1e2) # the point is in between the two means
@@ -37,6 +36,11 @@ def get_threshold_given_gaussian_mixture(data, key='ExtraCort'):
     gaussian2 = data[key+'_var_W'][i1]*gaussian(vv, data[key+'_var_M'][i1], data[key+'_var_S'][i1])
     ii = np.argmin(np.power(gaussian1-gaussian2, 2))
     data[key+'_var_threshold_low'] = vv[ii]
+    
+    if W[i0]>=1.5*W[i1]: # means preponderant down states
+        data[key+'_var_threshold'] = vv[ii]
+    else: # means preponderant active states
+        data[key+'_var_threshold'] = M[i0]
     
 
 def compute_smooth_time_varying_std(data, key='ExtraCort',
@@ -62,7 +66,6 @@ def compute_smooth_time_varying_std(data, key='ExtraCort',
     nsmooth = int(smoothing/data['dt_var'])
     data[key+'_var_smoothed'] = gaussian_smoothing(data[key+'_var'], nsmooth)
 
-    
     
 def Mukovski_method(data, key='ExtraCort',
                     min_duration=100e-3, max_duration=np.inf,
