@@ -2,7 +2,7 @@
 
 Short rewriting of the wavelet transform module of SciPy
 
-correspondance: yann.zerlaut@iit.it
+correspondence: yann.zerlaut@iit.it
 
 """
 
