@@ -8,7 +8,6 @@ def load_file(filename, zoom=[0,np.inf]):
     if filename.endswith('.bin'):
         return binary.load_file(filename, zoom=zoom)
     elif filename.endswith('.abf'):
-        print(filename)
         return axon.load_file(filename, zoom=zoom)
     else:
         return None
