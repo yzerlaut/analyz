@@ -1,0 +1,8 @@
+channel_groups = {
+    # Shank index.
+    0:
+        {
+            # List of channels to keep for spike detection.
+            'channels': [0],
+    }
+}
