@@ -13,7 +13,7 @@ traces = dict(
     voltage_gain=1.,
     sample_rate=%(facq)f,
     n_channels=1,
-    dtype='int16',
+    dtype='float32',
 )
 
 spikedetekt = dict(

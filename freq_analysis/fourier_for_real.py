@@ -46,8 +46,6 @@ def inv_FT(signal, N, dt):
     ft = np.fft.irfft(signal, N)/dt
     return ft
     
-import matplotlib.pylab as plt
-
 if __name__ == '__main__':
     """
     illustrate the conventions used in this module
@@ -55,6 +53,8 @@ if __name__ == '__main__':
     transform and its inverse to show that this module can be used in complement
     of analytic derivations
     """
+
+    import matplotlib.pylab as plt
 
     # #### 1) conventions used in this module !
     plt.figure(figsize=(4,3.5))
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
 
     Q, ts, Tau = .1, 10., 10.
-    dt, N, t0 = 0.063, 12.3e2, 0.
+    dt, N, t0 = 0.063, 1230, 0.
     t = t0+np.arange(N)*dt # time vector
     f = time_to_freq(len(t), dt)
 
