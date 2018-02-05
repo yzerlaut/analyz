@@ -6,66 +6,92 @@ from scipy import signal
 from scipy import integrate
 from scipy.ndimage.filters import gaussian_filter1d
 
-def gaussian_smoothing(signal, idt_sbsmpl=10):
+def gaussian_smoothing(Signal, idt_sbsmpl=10):
     """Gaussian smoothing of the data"""
-    return gaussian_filter1d(signal, idt_sbsmpl)
+    return gaussian_filter1d(Signal, idt_sbsmpl)
 
-def autocorrel(signal, tmax, dt):
+def autocorrel(Signal, tmax, dt):
     """
-    argument : signal (np.array), tmax and dt (float)
+    argument : Signal (np.array), tmax and dt (float)
     tmax, is the maximum length of the autocorrelation that we want to see
     returns : autocorrel (np.array), time_shift (np.array)
-    take a signal of time sampling dt, and returns its autocorrelation
+    take a Signal of time sampling dt, and returns its autocorrelation
      function between [0,tstop] (normalized) !!
     """
     steps = int(tmax/dt) # number of steps to sum on
-    Signal = (signal-signal.mean())/signal.std()
-    cr = np.correlate(Signal[steps:],Signal)/steps
+    Signal2 = (Signal-Signal.mean())/Signal.std()
+    cr = np.correlate(Signal2[steps:],Signal2)/steps
     time_shift = np.arange(len(cr))*dt
     return cr/cr.max(), time_shift
 
-def crosscorrel(signal1, signal2, tmax, dt):
+def get_acf_time(Signal, dt,
+                 min_time=1., max_time=100.,
+                 acf=None,
+                 procedure='integrate'):
     """
-    argument : signal1 (np.array()), signal2 (np.array())
+    returns the autocorrelation time of some fluctuations: Signal
+
+    two methods: fitting of an exponential decay vs temporal integration
+
+    """
+
+    if acf is None:
+        acf, shift = autocorrel(Signal, np.mean([max_time, min_time]), dt)
+
+    if procedure=='fit':
+        def func(X):
+            return np.sum(np.abs(np.exp(-shift/X[0])-acf))
+        res = minimize(func, [min_time],
+                       bounds=[[min_time, max_time]], method='L-BFGS-B')
+        return res.x[0]
+    else:
+        # we integrate
+        shift = np.arange(len(acf))*dt
+        return integrate.cumtrapz(acf, shift)[-1]
+
+
+def crosscorrel(Signal1, Signal2, tmax, dt):
+    """
+    argument : Signal1 (np.array()), Signal2 (np.array())
     returns : np.array()
-    take two signals, and returns their crosscorrelation function 
+    take two Signals, and returns their crosscorrelation function 
 
     CONVENTION:
     --------------------------------------------------------------
     when the peak is in the past (negative t_shift)
-    it means that signal2 is delayed with respect to signal 1
+    it means that Signal2 is delayed with respect to Signal 1
     --------------------------------------------------------------
     """
-    if len(signal1)!=len(signal2):
+    if len(Signal1)!=len(Signal2):
         print('Need two arrays of the same size !!')
         
     steps = int(tmax/dt) # number of steps to sum on
     time_shift = dt*np.concatenate([-np.arange(1, steps)[::-1], np.arange(steps)])
     CCF = np.zeros(len(time_shift))
     for i in np.arange(steps):
-        ccf = np.corrcoef(signal1[:len(signal1)-i], signal2[i:])
+        ccf = np.corrcoef(Signal1[:len(Signal1)-i], Signal2[i:])
         CCF[steps-1+i] = ccf[0,1]
     for i in np.arange(steps):
-        ccf = np.corrcoef(signal2[:len(signal1)-i], signal1[i:])
+        ccf = np.corrcoef(Signal2[:len(Signal1)-i], Signal1[i:])
         CCF[steps-1-i] = ccf[0,1]
     return CCF, time_shift
 
-def crosscorrel_norm(signal1,signal2):
+def crosscorrel_norm(Signal1,Signal2):
     """
     computes the cross-correlation, and takes into account the boundary
     effects ! so normalizes by the weight of the bins !!
     the two array have t have the same size @
     
-    argument : signal1 (np.array()), signal2 (np.array())
+    argument : Signal1 (np.array()), Signal2 (np.array())
     returns : np.array()
-    take two signals, and returns their crosscorrelation function 
+    take two Signals, and returns their crosscorrelation function 
     """
-    if signal1.size!=signal2.size:
+    if Signal1.size!=Signal2.size:
         print("problem no equal size vectors !!")
-    signal1 = (signal1-signal1.mean())
-    signal2 = (signal2-signal2.mean())
-    cr = signal.fftconvolve(signal1,signal2,"full")/signal1.std()/signal2.std()
-    ww = np.linspace(signal1.size,0,-1)
+    Signal1 = (Signal1-Signal1.mean())
+    Signal2 = (Signal2-Signal2.mean())
+    cr = signal.fftconvolve(Signal1,Signal2,"full")/Signal1.std()/Signal2.std()
+    ww = np.linspace(Signal1.size,0,-1)
     bin_weight = np.concatenate((ww[::-1],ww[1:]))
     return cr/bin_weight
 
@@ -120,19 +146,19 @@ def low_pass_by_convolve_with_exp(data, T, dt):
 def smooth(x,window_len=11,window='hanning'):
     """smooth the data using a window with requested size.
     
-    This method is based on the convolution of a scaled window with the signal.
-    The signal is prepared by introducing reflected copies of the signal 
+    This method is based on the convolution of a scaled window with the Signal.
+    The Signal is prepared by introducing reflected copies of the Signal 
     (with the window size) in both ends so that transient parts are minimized
-    in the begining and end part of the output signal.
+    in the begining and end part of the output Signal.
     
     input:
-        x: the input signal 
+        x: the input Signal 
         window_len: the dimension of the smoothing window; should be an odd integer
         window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
             flat window will produce a moving average smoothing.
 
     output:
-        the smoothed signal
+        the smoothed Signal
         
     example:
 
@@ -143,7 +169,7 @@ def smooth(x,window_len=11,window='hanning'):
     see also: 
     
     np.hanning, np.hamming, np.bartlett, np.blackman, np.convolve
-    scipy.signal.lfilter
+    scipy.Signal.lfilter
  
     TODO: the window parameter could be the window itself if an array instead of a string
     NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
@@ -164,12 +190,12 @@ if __name__=='__main__':
     import matplotlib.pyplot as plt
     
     t = np.linspace(0, np.pi*2, int(1e3))
-    signal1 = np.sin(3*t)
-    signal2 = np.cos(3*t-np.pi/4)
-    cr, t_shift = crosscorrel(signal1, signal2, np.pi/2, t[1]-t[0])
+    Signal1 = np.sin(3*t)
+    Signal2 = np.cos(3*t-np.pi/4)
+    cr, t_shift = crosscorrel(Signal1, Signal2, np.pi/2, t[1]-t[0])
     _, ax = plt.subplots(2)
-    ax[0].plot(t, signal1, 'k')
-    ax[0].plot(t, signal2)
+    ax[0].plot(t, Signal1, 'k')
+    ax[0].plot(t, Signal2)
     ax[1].plot(t_shift, cr, '-')
 
     plt.show()
