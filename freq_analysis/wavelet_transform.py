@@ -26,19 +26,21 @@ def make_ricker_of_right_size(freq, dt, with_t=False, factor_freq=2.):
     """
     tstop = factor_freq/freq
     t = np.arange(int(tstop/dt))*dt
+    
+    wvlt = ricker(t, freq, t[-1]/2.)
     if with_t:
-        return t-tstop/2., ricker(t, freq, t[-1]/2.)
+        return t-tstop/2., wvlt-np.sum(wvlt)
     else:
-        return ricker(t, freq, t[-1]/2.) 
+        return wvlt#-np.sum(wvlt)
 
 def from_fourier_to_morlet(freq):
     x = np.linspace(0.1/freq, 2.*freq, 1e3)
     return x[np.argmin((x-freq*(1-np.exp(-freq*x)))**2)]
     
 def make_morlet_of_right_size(freq, dt,
-                              with_t=False, s=5.):
+                              with_t=False, s=1.):
     """
-    returns a ricker of size int(factor_freq*/(freq*dt))
+    returns a Morlet wavelet of size int(factor_freq*/(freq*dt))
     centered in the middle of the array (for use with convolve)
 
     Note factor_freq = 2 covers well the extent of the ricker
@@ -47,11 +49,12 @@ def make_morlet_of_right_size(freq, dt,
     t = np.arange(int(tstop/dt))*dt
     # sigma = from_fourier_to_morlet(freq)
     w = len(t)*freq*dt/(2.*s)
-    
+
+    wvlt = np.real(signal.morlet(len(t), w, s=s))
     if with_t:
-        return t-tstop/2., np.real(signal.morlet(len(t), w, s=s))
+        return t-tstop/2., wvlt-np.sum(wvlt)
     else:
-        return np.real(signal.morlet(len(t), w, s=1.))
+        return wvlt-np.sum(wvlt)
     
 def my_cwt(data, frequencies, dt, wavelet='ricker'):
     """

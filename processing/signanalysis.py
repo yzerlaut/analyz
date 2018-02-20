@@ -5,6 +5,7 @@ import numpy as np
 from scipy import signal
 from scipy import integrate
 from scipy.ndimage.filters import gaussian_filter1d
+from scipy.optimize import minimize
 
 def gaussian_smoothing(Signal, idt_sbsmpl=10):
     """Gaussian smoothing of the data"""
@@ -25,7 +26,7 @@ def autocorrel(Signal, tmax, dt):
     return cr/cr.max(), time_shift
 
 def get_acf_time(Signal, dt,
-                 min_time=1., max_time=100.,
+                 min_time=0., max_time=100.,
                  acf=None,
                  procedure='integrate'):
     """
@@ -36,18 +37,20 @@ def get_acf_time(Signal, dt,
     """
 
     if acf is None:
-        acf, shift = autocorrel(Signal, np.mean([max_time, min_time]), dt)
-
+        acf, shift = autocorrel(Signal, max_time, dt)
+    else:
+        shift = np.arange(int(max_time/dt))*dt
+        
     if procedure=='fit':
         def func(X):
             return np.sum(np.abs(np.exp(-shift/X[0])-acf))
-        res = minimize(func, [min_time],
-                       bounds=[[min_time, max_time]], method='L-BFGS-B')
+        res = minimize(func, [np.mean([max_time, min_time+dt])],
+                       bounds=[[min_time+dt, max_time]], method='L-BFGS-B')
         return res.x[0]
     else:
         # we integrate
-        shift = np.arange(len(acf))*dt
-        return integrate.cumtrapz(acf, shift)[-1]
+        i0 = min([len(acf), len(shift)])
+        return integrate.cumtrapz(acf[:i0], shift[:i0])[-1]
 
 
 def crosscorrel(Signal1, Signal2, tmax, dt):
