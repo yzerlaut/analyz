@@ -5,9 +5,9 @@ import data_analysis.IO.hdf5 as hdf5
 
 def classify_RTXI_recordings_according_to_protocols(data):
     """
-    
+    to be implemented
     """
-    print(data['params'])
+    # print(data['params'])
 
     data['protocol_type'] = ''
 
