@@ -48,27 +48,6 @@ def load_dict_from_hdf5(filename):
     with h5py.File(filename, 'r') as h5file:
         return recursively_load_dict_contents_from_group(h5file, '/')
 
-def load_continous_RTXI_recording(filename):
-    """
-    ....
-    """
-    data = load_dict_from_hdf5(filename)['Trial1']
-    print(data.keys())
-    print(data['Downsampling Rate'])
-    formatted_data = {}
-    formatted_data['Downsampling Rate'] = data['Downsampling Rate']
-    formatted_data['Date'] = data['Date']
-    # time step
-    formatted_data['dt'] = 1e-9*float(data['Period (ns)'])
-    # parameters
-    formatted_data['params'] = {}
-    for key, val in data['Parameters'].items():
-        print(key, val)
-        formatted_data['params'][key] = float(val[0][1])
-    for i in range(data['Synchronous Data']['Channel Data'].shape[1]):
-        formatted_data[list(data['Synchronous Data'].keys())[i]] = data['Synchronous Data']['Channel Data'][:,i]
-    return formatted_data
-
 def recursively_load_dict_contents_from_group(h5file, path):
     """
     ....
