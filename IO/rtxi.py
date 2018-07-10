@@ -38,7 +38,6 @@ def find_metadata_file_and_add_parameters(data):
         # we loop through the dd dictionary and set its key and values in the data dictionary
         for key in locals()['dd']:
             data[key] = locals()['dd'][key]
-            print(data[key])
     else:
         print('-----------------------------------------')
         print('no metadata file found in this folder')
