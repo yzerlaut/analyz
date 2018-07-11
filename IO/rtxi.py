@@ -21,11 +21,11 @@ def find_metadata_file_and_add_parameters(data):
     file_list= os.listdir(file_directory)
     json_list, time_stamps = [], []
     for ff in file_list:
-        if len(ff.split('.csteps.JSON'))>1:
+        if len(ff.split('.JSON'))>1:
             json_list.append(ff)
-            time_stamps.append(from_filename_to_time_stamp(ff, extension='.csteps.JSON'))
+            time_stamps.append(from_filename_to_time_stamp(ff, extension='.JSON'))
 
-    if len(json_list)>1:
+    if len(json_list)>0:
         # the right file is the one right before the recording
         ii = np.argmin(np.abs(np.array(time_stamps)-time_stamp_filename))
         param_filename = json_list[ii]
