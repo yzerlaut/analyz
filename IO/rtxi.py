@@ -1,16 +1,20 @@
+"""
+This assumes that datafiles are stored as :
+DATA_FOLDER/YYYY_MM_DD/hh:mm:ss.RTXI.h5
+with a metadata file
+DATA_FOLDER/YYYY_MM_DD/hh:mm:ss.JSON
+"""
 import numpy as np
 import sys, pathlib, os
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 import data_analysis.IO.hdf5 as hdf5
 
-def classify_RTXI_recordings_according_to_protocols(data):
-    """
-    to be implemented
-    """
-    # print(data['params'])
-
-    data['protocol_type'] = ''
-
+def from_filename_to_time_stamp(filename, extension='.RTXI.h5'):
+    new_filename = filename.split(os.path.sep)[-1] # to be sure to have the last extension
+    time_stamp = 0
+    for val, factor in zip(new_filename.split(extension)[0].split(':'), [3600., 60., 1.]):
+        time_stamp += factor*float(val)
+    return time_stamp
 
 def find_metadata_file_and_add_parameters(data):
     """
@@ -62,16 +66,8 @@ def load_continous_RTXI_recording(filename,
     for i in range(data['Synchronous Data']['Channel Data'].shape[1]):
         formatted_data[list(data['Synchronous Data'].keys())[i]] = data['Synchronous Data']['Channel Data'][:,i]
 
-    classify_RTXI_recordings_according_to_protocols(formatted_data)
-
     if with_metadata:
         find_metadata_file_and_add_parameters(formatted_data)
     
     return formatted_data
 
-def from_filename_to_time_stamp(filename, extension='.RTXI.h5'):
-    new_filename = filename.split(os.path.sep)[-1] # to be sure to have the last extension
-    time_stamp = 0
-    for val, factor in zip(new_filename.split(extension)[0].split(':'), [3600., 60., 1.]):
-        time_stamp += factor*float(val)
-    return time_stamp
