@@ -7,17 +7,17 @@ from data_analysis.manipulation.files import * # download data_analysis module a
 from graphs.my_graph import *  # download graphs module at https://bitbucket.org/yzerlaut/graphs
 
 def make_raw_data_figure(data,
-                         args,
+                         # args,
                          figsize=(.8,.16),
                          keys = ['Isyn', 'Vm', 'LFP'],
-                         colors = [Kaki, Grey, 'k'],
+                         colors = [Kaki, 'k', Grey],
                          extent_factors = [1, 3, 1],
                          tzoom = [0,10],
                          Vm_color=Blue,
                          Iinj_color=Orange,
                          nGe_color=Green,
                          LFP_color=Grey,
-                         Vm_spike_highlight={'marker':'*', 'ms':},
+                         Vm_spike_highlight={'marker':'*', 'ms':3},
                          Vpeak = -10e-3,
                          lw = 1,
                          spike_ms=4.):
@@ -28,7 +28,7 @@ def make_raw_data_figure(data,
     fig, ax = figure(figsize=figsize, left=.1, bottom=.1)
     
     # time conditions
-    cond = (data['t']>args.tzoom[0]) & (data['t']<args.tzoom[1])
+    cond = (data['t']>tzoom[0]) & (data['t']<tzoom[1])
     
     for k, key, color, extent_f in zip(range(len(colors)), keys, colors, extent_factors):
 
@@ -40,11 +40,13 @@ def make_raw_data_figure(data,
             
         Tmin, Tmax = np.min(trace), np.max(trace)
         dT = Tmax-Tmin
-            
-        ax.plot(data['t'][cond], trace*dT0/dT*extent_f+np.array(extent_factors)[:k].sum(),
+
+        print(np.array(extent_factors)[:k].sum())
+        ax.plot(data['t'][cond], trace*dT0/dT*extent_f+np.array(extent_factors)[:k].sum()*dT0+Tmin0,
                 color=color,
                 lw=lw)
         
+    set_plot(ax, [], xlim=[data['t'][cond][0], data['t'][cond][-1]])
     
     # # from Iinj to Vm
     # ax.plot(data['t'][cond], data[data['Isyn']][cond], color=Iinj_color, lw=1)
@@ -73,7 +75,6 @@ def make_raw_data_figure(data,
     #         ax.annotate('Pattern '+str(int(ss+1)),  (te, Imax+Imin))
                 
                 
-    # set_plot(ax, [], xlim=[data['t'][cond][0], data['t'][cond][-1]])
     # ax.annotate('$I_{inj}$', (args.tzoom[0], Imin), color=Iinj_color)
     # ax.annotate(r'$G_{e}$/$G_L$', (args.tzoom[0], Imax), color=nGe_color)
     # ax.annotate('$V_{m}$', (args.tzoom[0], 2*(Imax-Imin)+Imin), color=Vm_color)
@@ -160,6 +161,7 @@ if __name__ == '__main__':
 
     filename = sys.argv[-1]
     data = rtxi.load_continous_RTXI_recording(filename, with_metadata=True)
-    preprocessing.sort_keys(data)
-    
-    
+    preprocessing.find_keys(data, keys_to_find = ['Iout', 'Vm', 'LFP'])
+    make_raw_data_figure(data,
+                         keys = ['Iout', 'Vm', 'LFP'])
+    show()

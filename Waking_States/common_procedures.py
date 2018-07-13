@@ -6,19 +6,16 @@ from graphs.my_graph import *  # download graphs module at https://bitbucket.org
 from data_analysis.manipulation.files import * # download data_analysis module at https://bitbucket.org/yzerlaut/
 from data_analysis.processing.signanalysis import gaussian_smoothing
 
-def sort_keys(data):
+def find_keys(data,
+              keys_to_find=['Vm', 'LFP', 'Isyn', 'nGe', 'Iout']):
+    
     keys = list(data.keys())
     for key in keys:
-        if len(key.split('Isyn'))>1:
-            data['Isyn'] = key
-        if len(key.split('Iout'))>1:
-            data['Iout'] = key
-        if len(key.split('nGe'))>1:
-            data['nGe'] = key
-        if len(key.split('Vm'))>1:
-            data['Vm'] = key
-        if len(key.split('LFP'))>1:
-            data['LFP'] = key
+        for key_to_find in keys_to_find:
+            if len(key.split(key_to_find))>1:
+                data[key_to_find] = key
+
+    data['t'] = np.arange(len(data[data['Vm']]))*data['dt']
 
             
 def compute_network_states_and_responses(data, args,

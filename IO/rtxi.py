@@ -57,14 +57,23 @@ def load_continous_RTXI_recording(filename,
     formatted_data = {'filename':filename}
     formatted_data['Downsampling Rate'] = data['Downsampling Rate']
     formatted_data['Date'] = data['Date']
+    
     # time step
     formatted_data['dt'] = 1e-9*float(data['Period (ns)'])
+    
     # parameters
     formatted_data['params'] = {}
     for key, val in data['Parameters'].items():
         formatted_data['params'][key] = float(val[0][1])
-    for i in range(data['Synchronous Data']['Channel Data'].shape[1]):
-        formatted_data[list(data['Synchronous Data'].keys())[i]] = data['Synchronous Data']['Channel Data'][:,i]
+
+    print(data['Synchronous Data'].keys())
+    
+    # raw data
+    c = 0
+    for i, key in enumerate(data['Synchronous Data']):
+        if key!='Channel Data':
+            formatted_data[key] = data['Synchronous Data']['Channel Data'][:,c]
+            c+=1
 
     if with_metadata:
         find_metadata_file_and_add_parameters(formatted_data)
