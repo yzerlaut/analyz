@@ -6,7 +6,7 @@ def load_file(filename, zoom=[0,np.inf]):
 
     # loading the data file
     try:
-        data = AxonIO(filename).read_block(lazy=False, cascade=True)
+        data = AxonIO(filename).read_block(lazy=False)
         dt =  float(data.segments[0].analogsignals[0].sampling_period)
         if zoom[0]<data.segments[0].analogsignals[0].t_start:
             zoom[0]=data.segments[0].analogsignals[0].t_start
