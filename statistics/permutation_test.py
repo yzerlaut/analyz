@@ -53,9 +53,10 @@ if __name__ == '__main__':
         set_plot(ax, xlabel='x-data', yticks_labels=[], num_xticks=3)
     set_plot(AX[0], xlabel='x-data', ylabel='y-data', num_xticks=3)
 
-    c, pvalue, Correl_Coeff_Distribution = linear_correlation(x, y, return_distrib=True, N=int(1e5), seed=2)
+    c, pvalue, Correl_Coeff_Distribution = linear_correlation(x, y, return_distrib=True, N=int(1e4), seed=2)
     print(pvalue)
     fig3, ax = plt.subplots(figsize=(3,3))
+    plt.subplots_adjust(left=.3, bottom=.3)
     ax.hist(Correl_Coeff_Distribution, bins=100)
     ax.plot([c,c], ax.get_ylim(), 'r-')
     set_plot(ax, xlabel='correlation-coef', ylabel='occurence')
