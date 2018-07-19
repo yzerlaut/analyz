@@ -17,16 +17,21 @@ def make_writable_dict(dic):
     for key, value in dic.items():
         if (type(value)==float) or (type(value)==int):
             dic2[key] = np.ones(1)*value
-        if type(value)==list:
+        elif type(value)==list:
             dic2[key] = np.array(value)
+        elif isinstance(value, (str, bytes)):
+            dic2[key] = np.string_(value)
+        elif type(value)==dict:
+            dic2[key] = make_writable_dict(value)
     return dic2
 
 def save_dict_to_hdf5(dic, filename):
     """
     ....
     """
+    dic2 = make_writable_dict(dic)
     with h5py.File(filename, 'w') as h5file:
-        recursively_save_dict_contents_to_group(h5file, '/', dic)
+        recursively_save_dict_contents_to_group(h5file, '/', dic2)
 
 def recursively_save_dict_contents_to_group(h5file, path, dic):
     """
@@ -37,7 +42,9 @@ def recursively_save_dict_contents_to_group(h5file, path, dic):
         if isinstance(item, (np.ndarray, np.int64, np.float64, bytes)):
             h5file[new_key] = item
         elif isinstance(item, str):
-            h5file[new_key] = np.string_(item)
+            print('/!\ Problem ! there should be no strings anymore at that stage !!')
+            print('key ', str(new_key), 'of value:', item , 'is still a string')
+            # h5file[new_key] = np.string_(item)
         elif isinstance(item, dict):
             recursively_save_dict_contents_to_group(h5file, path + key + '/', item)
         elif isinstance(item, tuple):
@@ -69,7 +76,7 @@ def recursively_load_dict_contents_from_group(h5file, path):
     ans = {}
     for key, item in h5file[path].items():
         if isinstance(item, h5py._hl.dataset.Dataset):
-            # print(path, key, item.value, type(item.value))
+            print(path, key, item.value, type(item.value))
             if isinstance(item.value, bytes):
                 to_be_put = str(item.value,'utf-8')
             else:
@@ -89,12 +96,14 @@ if __name__ == '__main__':
 
     data = {'x': 'astring',
             'y': np.arange(10),
+            '0':'asdfsd',
             'd': {'z': np.ones((2,3)),
                   'sdkfjh':'',
+                  'dict_of_dict':{'234':'kjsdfhsdjfh','z': np.ones((1,3))},
                   'b': b'bytestring'}}
     print(data)
     filename = 'test.h5'
     save_dict_to_hdf5(data, filename)
     dd = load_dict_from_hdf5(filename)
-    print(dd)
     # should test for bad type
+    print(dd)
