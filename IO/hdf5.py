@@ -16,8 +16,12 @@ import os
 def make_writable_elements(value):
     # all cases to be covered should be:
     # np.ndarray, np.int64, np.float64, bytes, dict, tuple, list, str
-    if isinstance(value, (float, int)):
-        return np.ones(1)*value
+    if isinstance(value, (np.int64, np.float64)):
+        return value
+    elif isinstance(value, float):
+        return np.float(value)
+    elif isinstance(value, int):
+        return np.int(value)
     elif isinstance(value, str):
         return np.string_(value)
     elif isinstance(value, tuple):
@@ -34,28 +38,28 @@ def make_writable_list(List):
         else:
             list_to_return = [make_writable_elements(List[i]) for i in range(len(List))]
     except IndexError:
-        list_to_return = [make_writable_elements(List[i]) for i in range(len(List))]
+            list_to_return = [make_writable_elements(List[i]) for i in range(len(List))]
     return list_to_return
 
 
-def make_writable_dict(dic):
-    dic2 = dic.copy()
-    for key, value in dic.items():
-        if isinstance(value, (list, np.ndarray)):
-            dic2[key] = make_writable_list(value)
-        elif isinstance(value, dict):
-            dic2[key] = make_writable_dict(value)
-        else:
-            dic2[key] = make_writable_elements(value)
-    return dic2
+# def make_writable_dict(dic):
+#     dic2 = dic.copy()
+#     for key, value in dic.items():
+#         if isinstance(value, (list, np.ndarray)):
+#             dic2[key] = make_writable_list(value)
+#         elif isinstance(value, dict):
+#             dic2[key] = make_writable_dict(value)
+#         else:
+#             dic2[key] = make_writable_elements(value)
+#     return dic2
 
 def save_dict_to_hdf5(dic, filename):
     """
     ....
     """
-    dic2 = make_writable_dict(dic)
+    print(dic)
     with h5py.File(filename, 'w') as h5file:
-        recursively_save_dict_contents_to_group(h5file, '/', dic2)
+        recursively_save_dict_contents_to_group(h5file, '/', dic)
 
 def recursively_save_dict_contents_to_group(h5file, path, dic):
     """
@@ -64,35 +68,32 @@ def recursively_save_dict_contents_to_group(h5file, path, dic):
     for key, item in dic.items():
         new_key = np.string_(path+key)
         if isinstance(item, np.ndarray):
+            if item.dtype.char=='U':
+                h5file[new_key] = np.array(item, dtype=np.string_)
+            else:
+                h5file[new_key] = item
+        elif isinstance(item, (np.int64, np.float64)):
             h5file[new_key] = item
-        elif isinstance(item, (np.int64, np.float64, bytes)):
-            h5file[new_key] = item
-        elif isinstance(item, str):
-            print('/!\ Problem ! there should be no strings anymore at that stage !!')
-            print('key ', str(new_key), 'of value:', item , 'is still a string')
-            # h5file[new_key] = np.string_(item)
+        elif isinstance(item, (int, float, str, bytes, tuple)):
+            h5file[new_key] = make_writable_elements(item)
+        elif isinstance(item, list):
+            h5file[new_key] = make_writable_list(item)
         elif isinstance(item, dict):
             recursively_save_dict_contents_to_group(h5file, path + key + '/', item)
-        elif isinstance(item, tuple):
-            h5file[new_key] = np.array(item)
-        elif isinstance(item, list):
-            # h5file[new_key] = np.array(item)
-            try:
-                if type(item[0])==str:
-                    item = np.array([np.string_(ii) for ii in item])
-            except (IndexError, AttributeError):
-                pass
-            h5file[new_key] = np.array(item)
-        elif isinstance(item, (float, int)):
-            h5file[new_key] = np.array(item)
         else:
             raise ValueError('Cannot save %s type'%type(item))
 
+        
 def make_readable_elements(value):
     # all cases to be covered should be:
     # np.ndarray, np.int64, np.float64, bytes, dict, tuple, list, str
     if isinstance(value, bytes):
         return str(value, 'utf-8')
+    elif isinstance(value, np.ndarray):
+        if value.dtype.char=='S':
+            return np.array(value, dtype=str)
+        else:
+            return value
     else:
         return value
 
@@ -111,10 +112,8 @@ def make_readable_list(List):
 
 def make_readable_dict(dic):
     dic2 = dic.copy()
-    for key, value in dic.items():
-        if isinstance(value, (list, np.ndarray)):
-            dic2[key] = make_readable_list(value)
-        elif isinstance(value, dict):
+    for key, value in dic2.items():
+        if isinstance(value, dict):
             dic2[key] = make_readable_dict(value)
         else:
             dic2[key] = make_readable_elements(value)
@@ -125,8 +124,8 @@ def load_dict_from_hdf5(filename):
     ....
     """
     with h5py.File(filename, 'r') as h5file:
-        dic = recursively_load_dict_contents_from_group(h5file, '/')
-    return make_readable_dict(dic)
+        return recursively_load_dict_contents_from_group(h5file, '/')
+
 
 def recursively_load_dict_contents_from_group(h5file, path):
     """
@@ -135,17 +134,12 @@ def recursively_load_dict_contents_from_group(h5file, path):
     ans = {}
     for key, item in h5file[path].items():
         if isinstance(item, h5py._hl.dataset.Dataset):
-            print(path, key, item.value, type(item.value))
             if isinstance(item.value, bytes):
                 to_be_put = str(item.value,'utf-8')
+            elif isinstance(item.value, list):
+                to_be_put = make_readable_list(item.value)
             else:
-                to_be_put = item.value
-            try:
-                if len(to_be_put)>1:
-                    if isinstance(to_be_put[0], bytes):
-                        to_be_put = np.array([str(ii,'utf-8') for ii in to_be_put])
-            except TypeError:
-                pass
+                to_be_put = make_readable_elements(item.value)
             ans[str(key)] = to_be_put
         elif isinstance(item, h5py._hl.group.Group):
             ans[str(key)] = recursively_load_dict_contents_from_group(h5file, path + key + '/')
@@ -157,14 +151,15 @@ if __name__ == '__main__':
 
     data = {'x': 'astring',
             'y': np.arange(10),
-            '0':['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd'],
-            '1':np.array([['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd'],['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd']]),
+            '0_params': {'N': 4000, 'b': 0.0, 'Vthre': -50.0, 'name': 'RecExc', 'Cm': 200.0, 'El': -70.0, 'Trefrac': 5.0, 'tauw': 1000000000.0, 'Vreset': -70.0, 'Gl': 10.0, 'a': 0.0, 'delta_v': 0.0},
+            '1_params': {'N': 1000, 'b': 0.0, 'Cm': 200.0, 'Vthre': -53.0, 'Gl': 10.0, 'El': -70.0, 'Trefrac': 5.0, 'tauw': 1000000000.0, 'name': 'RecInh', 'Vreset': -70.0, 'a': 0.0, 'delta_v': 0.0},
+            '0':{'asdfsd':34, 'asd':np.ones(2), 'name':'234'},
+            '1':np.array([['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd'],['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd']], dtype=str),
             '2':[['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd'],['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd']],
             'd': {'z': np.ones((2,3)),
                   'sdkfjh':'',
                   'dict_of_dict':{'234':'kjsdfhsdjfh','z': np.ones((1,3))},
                   'b': b'bytestring'}}
-    print(data)
     filename = 'test.h5'
     save_dict_to_hdf5(data, filename)
     dd = load_dict_from_hdf5(filename)
