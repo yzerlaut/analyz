@@ -57,7 +57,6 @@ def save_dict_to_hdf5(dic, filename):
     """
     ....
     """
-    print(dic)
     with h5py.File(filename, 'w') as h5file:
         recursively_save_dict_contents_to_group(h5file, '/', dic)
 
@@ -144,7 +143,6 @@ def recursively_load_dict_contents_from_group(h5file, path):
         elif isinstance(item, h5py._hl.group.Group):
             ans[str(key)] = recursively_load_dict_contents_from_group(h5file, path + key + '/')
     return ans
-
 
 
 if __name__ == '__main__':
