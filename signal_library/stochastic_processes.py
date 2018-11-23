@@ -29,7 +29,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append('../../../')
     from graphs.my_graph import *
-    from data_analysis.signal_library
+    from data_analysis.signal_library.classical_functions import gaussian
     
     mean, std, tau = 1, 2, 10
     y = OrnsteinUhlenbeck_Process(mean, std, tau, tstop=1000)
@@ -39,5 +39,5 @@ if __name__ == '__main__':
     AX[0][0].grid()
 
     hist(y, ax=AX[1][0], normed=True)
-
+    AX[1].plot(np.linspace(y.min(), y.max()), gaussian(np.linspace(y.min(), y.max())))
     show()

@@ -6,7 +6,7 @@ def load_file(filename, zoom=[0,np.inf]):
 
     # loading the data file
     try:
-        data = AxonIO(filename).read_block(lazy=False, cascade=True)
+        data = AxonIO(filename).read_block(lazy=False)
         dt =  float(data.segments[0].analogsignals[0].sampling_period)
         if zoom[0]<data.segments[0].analogsignals[0].t_start:
             zoom[0]=data.segments[0].analogsignals[0].t_start
@@ -20,7 +20,7 @@ def load_file(filename, zoom=[0,np.inf]):
         cond = (tt>=zoom[0]) & (tt<=zoom[1])
         VEC = [tt[cond]]
         for j in range(1, len(data.segments[ii-1].analogsignals)+1):
-            VEC.append(np.array(data.segments[ii-1].analogsignals[j-1])[cond])
+            VEC.append(np.array(data.segments[ii-1].analogsignals[j-1])[cond].flatten())
         ### 
         while (ii<len(data.segments)) and ((float(data.segments[min(ii,len(data.segments)-1)].analogsignals[0].t_start)<=zoom[1])):
             tt = np.array(data.segments[ii].analogsignals[0].times)
@@ -29,7 +29,7 @@ def load_file(filename, zoom=[0,np.inf]):
                 np.array(data.segments[ii].analogsignals[0].times)[cond]])
             for j in range(1, len(data.segments[ii].analogsignals)+1):
                 VEC[j] = np.concatenate([VEC[j],\
-                    np.array(data.segments[ii].analogsignals[j-1])[cond]])
+                    np.array(data.segments[ii].analogsignals[j-1])[cond].flatten()])
             ii+=1
         return VEC[0], VEC[1:]
     except FileNotFoundError:
@@ -56,8 +56,6 @@ def get_metadata(filename, infos={}):
         bd = {'main_protocol':'spont-act-sampling', 'clamp_index':1}
     return {**bd,**infos}
 
-
-
 if __name__ == '__main__':
     import sys
     import matplotlib.pylab as plt
@@ -65,6 +63,7 @@ if __name__ == '__main__':
     # AxonIO(filename).read_block(lazy=False, cascade=True)
     print(get_metadata(filename))
     t, data = load_file(filename, zoom=[-5.,np.inf])
+    print(t, data)
     # for i in range(10):
     #     plt.plot(t, data[0][i])
     plt.plot(t, data[0])
