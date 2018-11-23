@@ -1,17 +1,20 @@
 import numpy as np
 
-def Wiener_Process(mu, sigma, dt=0.1, tstop=100):
+def Wiener_Process(mu, sigma, dt=0.1, tstop=100, seed=0):
     """ 
     """
+    np.random.seed(seed)
     return np.random.randn(int(tstop/dt))*sigma+mu
 
-def OrnsteinUhlenbeck_Process(mu, sigma, tau, dt=0.1, tstop=100):
+def OrnsteinUhlenbeck_Process(mu, sigma, tau, dt=0.1, tstop=100, seed=1):
     """ 
     Ornstein-Uhlenbeck Process
 
     from joint work with bartosz telenczuk:
     https://github.com/yzerlaut/transfer_functions/blob/master/tf_filters.py
-    """ 
+    """
+    np.random.seed(seed)
+    
     diffcoef = 2*sigma**2/tau
     y0 = mu
     n_steps = int(tstop/dt)
