@@ -29,15 +29,26 @@ if __name__ == '__main__':
     import sys
     sys.path.append('../../../')
     from graphs.my_graph import *
-    from data_analysis.signal_library.classical_functions import gaussian
+    from classical_functions import gaussian
+    sys.path.append('../')
+    from processing.signanalysis import autocorrel
+
+    tstop=10000
+    mean, std, tau = 1, 2, 30
+    y = OrnsteinUhlenbeck_Process(mean, std, tau, tstop=tstop, dt=1)
     
-    mean, std, tau = 1, 2, 10
-    y = OrnsteinUhlenbeck_Process(mean, std, tau, tstop=1000)
+    fig, AX = figure(axes_extents=[[[2,1]],[[1,1],[1,1]]], hspace=1.8, wspace=1.5)
     
-    fig, AX = figure(axes_extents=[[[2,1]],[[1,1],[1,1]]])
-    plot(y, ax=AX[0][0])
+    plot(y[:1000], ax=AX[0][0], xlabel='time', ylabel='signal')
     AX[0][0].grid()
 
-    hist(y, ax=AX[1][0], normed=True)
-    AX[1].plot(np.linspace(y.min(), y.max()), gaussian(np.linspace(y.min(), y.max())))
+    hist(y, ax=AX[1][0], normed=True, ylabel='occurence', xlabel='signal')
+    AX[1][0].plot(np.linspace(y.min(), y.max()), gaussian(np.linspace(y.min(), y.max()), mean, std))
+
+    acf, ts = autocorrel(y, 4*tau, 1)
+    plot(ts, acf, ax=AX[1][1])
+    AX[1][1].plot(ts, np.exp(-ts/tau), lw=2, alpha=.5, label='theory')
+    AX[1][1].legend()
+    set_plot(AX[1][1], ylabel='autocorrelation', xlabel='time shift')
+    
     show()
