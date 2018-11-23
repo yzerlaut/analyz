@@ -25,10 +25,19 @@ def OrnsteinUhlenbeck_Process(mu, sigma, tau, dt=0.1, tstop=100):
 
 
 if __name__ == '__main__':
+    
     import sys
     sys.path.append('../../../')
     from graphs.my_graph import *
-    y = OrnsteinUhlenbeck_Process(1, 2, 10, tstop=1000)
-    print(y.mean(), y.std())
-    plot(y)
+    from data_analysis.signal_library
+    
+    mean, std, tau = 1, 2, 10
+    y = OrnsteinUhlenbeck_Process(mean, std, tau, tstop=1000)
+    
+    fig, AX = figure(axes_extents=[[[2,1]],[[1,1],[1,1]]])
+    plot(y, ax=AX[0][0])
+    AX[0][0].grid()
+
+    hist(y, ax=AX[1][0], normed=True)
+
     show()
