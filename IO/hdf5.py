@@ -42,16 +42,16 @@ def make_writable_list(List):
     return list_to_return
 
 
-# def make_writable_dict(dic):
-#     dic2 = dic.copy()
-#     for key, value in dic.items():
-#         if isinstance(value, (list, np.ndarray)):
-#             dic2[key] = make_writable_list(value)
-#         elif isinstance(value, dict):
-#             dic2[key] = make_writable_dict(value)
-#         else:
-#             dic2[key] = make_writable_elements(value)
-#     return dic2
+def make_writable_dict(dic):
+    dic2 = dic.copy()
+    for key, value in dic.items():
+        if isinstance(value, (list, np.ndarray)):
+            dic2[key] = make_writable_list(value)
+        elif isinstance(value, dict):
+            dic2[key] = make_writable_dict(value)
+        else:
+            dic2[key] = make_writable_elements(value)
+    return dic2
 
 def save_dict_to_hdf5(dic, filename):
     """
