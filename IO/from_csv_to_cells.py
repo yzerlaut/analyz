@@ -1,12 +1,12 @@
 import csv
 import numpy as np
 
-def transform_csv_into_array_of_cells(csvfile):
+def transform_csv_into_array_of_cells(csv_filename):
 
     CSV_ARRAY = []
     CELLS = [] # dictionary of each cell
 
-    with open('data.csv', 'r') as csvfile:
+    with open(csv_filename, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         for row in reader:
             CSV_ARRAY.append(row)
@@ -58,3 +58,39 @@ def List_cells_and_choose_one(csvfile, force_n=0):
         print('/!\ Not a valid cell number !!')
     else:
         return CELLS[n-1], n
+
+
+def get_data_from_csv(csvfile,
+                      delimiter=',',
+                      key_line_number=0,
+                      first_line_number=1,
+                      first_col_number=0):
+
+    CSV_ARRAY = []
+    
+    with open(csvfile, 'r') as csvfile:
+        reader = csv.reader(csvfile, delimiter=delimiter)
+        for row in reader:
+            CSV_ARRAY.append(row[first_col_number:])
+
+    # get keys from the datasheet
+    KEYS = np.array(CSV_ARRAY[key_line_number], dtype=str)
+    DATA = {}
+    for key in KEYS:
+        DATA[key] = []
+
+    for row in CSV_ARRAY[first_line_number:]:
+        for key, r in zip(KEYS, row):
+            DATA[key].append(r)
+            
+    for key in KEYS:
+        DATA[key] = np.array(DATA[key], dtype=str)
+
+    return DATA
+        
+    
+if __name__=='__main__':
+
+    DATA = get_data_from_csv('/Users/yzerlaut/work/varani/data/more_info.csv')
+    print(DATA)
+    print(np.unique(DATA['direction']))
