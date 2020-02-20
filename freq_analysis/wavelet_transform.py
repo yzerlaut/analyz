@@ -1,100 +1,60 @@
-"""
-
-Short rewriting of the wavelet transform module of SciPy
-
-correspondence: yann.zerlaut@iit.it
-
-"""
 
 import numpy as np
 from scipy import signal
 
-def ricker(t, f, t0):
-    """
-    Ricker wavelet of frequency 'f' centered in t0 and  over and signal length.
-    """
-    fact = (np.pi**2) * (f**2) * ((t - t0)**2)
-    y = (1.0 - 2.0 * fact) * np.exp(-fact)
-    return y
+### MORLET WAVELET, definition, properties and normalization
+def Morlet_Wavelet(t, f, w0=6.):
+    x = 2.*np.pi*f*t
+    output = np.exp(1j * x)
+    output *= np.exp(-0.5 * ((x/w0) ** 2)) # (Normalization comes later)
+    return output
 
-def make_ricker_of_right_size(freq, dt, with_t=False, factor_freq=2.):
+def Morlet_Wavelet_Decay(f, w0=6.):
     """
-    returns a ricker of size int(factor_freq*/(freq*dt))
-    centered in the middle of the array (for use with convolve)
-
-    Note factor_freq = 2 covers well the extent of the ricker
+    Time value of the wavelet where the amplitude decays of 
     """
-    tstop = factor_freq/freq
-    t = np.arange(int(tstop/dt))*dt
-    if with_t:
-        return t-tstop/2., ricker(t, freq, t[-1]/2.)
-    else:
-        return ricker(t, freq, t[-1]/2.) 
+    return 2 ** .5 * (w0/(np.pi*f))
 
 def from_fourier_to_morlet(freq):
     x = np.linspace(0.1/freq, 2.*freq, 1e3)
     return x[np.argmin((x-freq*(1-np.exp(-freq*x)))**2)]
     
-def make_morlet_of_right_size(freq, dt,
-                              with_t=False, s=5.):
-    """
-    returns a ricker of size int(factor_freq*/(freq*dt))
-    centered in the middle of the array (for use with convolve)
-
-    Note factor_freq = 2 covers well the extent of the ricker
-    """
-    tstop = 2.*np.pi/freq
-    t = np.arange(int(tstop/dt))*dt
-    # sigma = from_fourier_to_morlet(freq)
-    w = len(t)*freq*dt/(2.*s)
-    
+def get_Morlet_of_right_size(f, dt, w0=6., with_t=False):
+    Tmax = Morlet_Wavelet_Decay(f, w0=w0)
+    t = np.arange(-int(Tmax/dt), int(Tmax/dt)+1)*dt
     if with_t:
-        return t-tstop/2., np.real(signal.morlet(len(t), w, s=s))
+        return t, Morlet_Wavelet(t, f, w0=w0)
     else:
-        return np.real(signal.morlet(len(t), w, s=1.))
-    
-def my_cwt(data, frequencies, dt, wavelet='ricker'):
+        return Morlet_Wavelet(t, f, w0=w0)
+
+def norm_constant_th(freq, dt, w0=6.):
+    # from theoretical calculus:
+    n = (w0/2./np.sqrt(2.*np.pi)/freq)*(1.+np.exp(-w0**2/2))
+    return n/dt
+
+def my_cwt(data, frequencies, dt, w0=6.):
     """
-    Continuous wavelet transform, adapted from:
-    https://github.com/scipy/scipy/blob/v0.18.1/scipy/signal/wavelets.py#L311-L365
-
-    Performs a continuous wavelet transform on `data`,
-    using the `wavelet` function. A CWT performs a convolution
-    with `data` using the `wavelet` function, which is characterized
-    by a frequency parameter.
-
-    Parameters
-    ----------
-    data : (N,) ndarray
-        data on which to perform the transform.
-    frequencies : (M,) sequence
-        Widths to use for transform.
-    Returns
-    -------
-    cwt: (M, N) ndarray
-        Will have shape of (len(frequencies), len(data)).
-                                    width[ii]), mode='same')
+    wavelet transform with normalization to catch the amplitude of a sinusoid
     """
-    output = np.zeros([len(frequencies), len(data)])
+    output = np.zeros([len(frequencies), len(data)], dtype=np.complex)
 
-    if wavelet=='ricker':
-        make_wavelet_of_right_size = make_ricker_of_right_size
-    elif wavelet=='morlet':
-        make_wavelet_of_right_size = make_morlet_of_right_size
-    
     for ind, freq in enumerate(frequencies):
-        wavelet_data = make_wavelet_of_right_size(freq, dt)
-        # the wavelets have different integrals
-        # conv_number compensates for the number of summed points (i.e. also integral of wavelet)
-        conv_number = signal.convolve(np.ones(len(data)), np.ones(len(wavelet_data)),
-                                      mode='same')
-        # the sliding mean that depends on the frequency
-        sliding_mean = signal.convolve(data, np.ones(len(wavelet_data)),
-                                       mode='same')/conv_number
+        wavelet_data = np.conj(get_Morlet_of_right_size(freq, dt, w0=w0))
+        sliding_mean = signal.convolve(data,
+                                       np.ones(len(wavelet_data))/len(wavelet_data),
+                                       mode='same')
         # the final convolution
-        output[ind, :] = signal.convolve(data-sliding_mean, wavelet_data,
-                                         mode='same')/conv_number
+        wavelet_data_norm = norm_constant_th(freq, dt, w0=w0)
+        output[ind, :] = signal.convolve(data-sliding_mean+0.*1j,
+                                         wavelet_data,
+                                         mode='same')/wavelet_data_norm
     return output
+
+
+
+###########################################################
+## Plotting function ######################################
+###########################################################
 
 def illustration_plot(t, freqs, data, coefs, dt, tstop, freq1, freq2, freq3):
     """
@@ -193,18 +153,11 @@ if __name__ == '__main__':
 
     plt.style.use('ggplot')
 
-    import sys
-    sys.path.append('../../')
-    from graphs.my_graph import show
-    
     # temporal sampling
     dt, tstop = 1e-4, 1.
     t = np.arange(int(tstop/dt))*dt
     
-    if args.wavelet=='ricker':
-        make_wavelet_of_right_size = make_ricker_of_right_size
-    elif args.wavelet=='morlet':
-        make_wavelet_of_right_size = make_morlet_of_right_size
+    make_wavelet_of_right_size = get_Morlet_of_right_size
         
     if args.show_wavelet:
         for f in [10., 40., 70.]:
@@ -225,8 +178,8 @@ if __name__ == '__main__':
 
         # Continuous Wavelet Transform analysis
         freqs = np.linspace(1, 90, args.nfreq)
-        coefs = my_cwt(data, freqs, dt, wavelet=args.wavelet)
+        coefs = my_cwt(data, freqs, dt)
 
-        illustration_plot(t, freqs, data, coefs, dt, tstop, freq1, freq2, freq3)
-        # time_freq_plot(t, freqs, data, coefs)
-    show()
+        # illustration_plot(t, freqs, data, coefs)
+        time_freq_plot(t, freqs, data, coefs)
+    plt.show()
