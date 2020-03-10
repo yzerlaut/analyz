@@ -133,12 +133,12 @@ def recursively_load_dict_contents_from_group(h5file, path):
     ans = {}
     for key, item in h5file[path].items():
         if isinstance(item, h5py._hl.dataset.Dataset):
-            if isinstance(item.value, bytes):
-                to_be_put = str(item.value,'utf-8')
-            elif isinstance(item.value, list):
-                to_be_put = make_readable_list(item.value)
+            if isinstance(item[()], bytes):
+                to_be_put = str(item[()],'utf-8')
+            elif isinstance(item[()], list):
+                to_be_put = make_readable_list(item[()])
             else:
-                to_be_put = make_readable_elements(item.value)
+                to_be_put = make_readable_elements(item[()])
             ans[str(key)] = to_be_put
         elif isinstance(item, h5py._hl.group.Group):
             ans[str(key)] = recursively_load_dict_contents_from_group(h5file, path + key + '/')
