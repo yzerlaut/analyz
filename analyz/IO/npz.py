@@ -15,14 +15,21 @@ def load_dict(filename):
     output = {}
     for key in data.files:
         output[key] = data[key]
+
+        if type(output[key]) is np.ndarray:
+            try:
+                output[key] = output[key].item()
+            except ValueError:
+                pass
+        
     return output
         
 if __name__=='__main__':
 
     data = {'x':np.arange(10),
-            'y':{'blabla':'1',
+            'y':{'blabla':np.arange(17),
                  'blabla2':[34, 35]},
     }
     save_dict('data.npz', data)
     data = load_dict('data.npz')
-    print(data['x'], data['y'])
+    print(data['y']['blabla'])
