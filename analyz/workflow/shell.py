@@ -1,7 +1,7 @@
 
 
 # Print iterations progress
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r\n"):
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -20,7 +20,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
     # Print New Line on Complete
     if iteration == total: 
-        print()
+        print('\n')
 
 
 if __name__=='__main__':
