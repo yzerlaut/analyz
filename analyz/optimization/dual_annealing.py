@@ -1,17 +1,24 @@
 from scipy.optimize import dual_annealing
 import numpy as np
 
-def run_dual_annealing(func_to_minimize, x0,
-                       bounds=None, seed=1, maxiter=1000, verbose=False):
+def run_dual_annealing(func_to_minimize, x0=None,
+                       bounds=None,
+                       seed=1,
+                       maxiter=100, maxfun=200,
+                       no_local_search=False,
+                       verbose=False):
 
     if bounds is None:
         bounds = [None for x in x0]
 
-    res = dual_annealing(func_to_minimize,
-                         bounds=bounds, seed=seed, maxiter=maxiter)
+    res = dual_annealing(func_to_minimize, x0=x0,
+                         bounds=bounds, seed=seed,
+                         maxiter=maxiter, maxfun=maxfun,
+                         no_local_search=no_local_search)
     if verbose:
         print(res)
-    return res.x
+        
+    return res
 
 if __name__=='__main__':
     
