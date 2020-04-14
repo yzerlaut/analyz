@@ -2,13 +2,15 @@
 
 # analyz
 
-*A wrap up of tools for data analysis in neuroscientific context. Covering data import, data exploration, data mining, time-series analysis, statistics, ...*
+*A wrap up of tools for data analysis in neuroscientific context. Covering data import, data exploration, data mining using machine learning, time-series analysis, signal processing, statistics, ...*
+
+Part of the software suite for data science: [analyz](https://github.com/yzerlaut/analyz), [datavyz](https://github.com/yzerlaut/datavyz), [finalyz](https://github.com/yzerlaut/finalyz)
 
 # Components
 
-The package is organized around the follwoing 
+The package is organized around the following components:
 
-## IO (import-export interface)
+## IO - the import-export interface 
 
 Interface to load datafiles common data formats into numpy arrays, it currently supports:
 
@@ -19,7 +21,19 @@ Interface to load datafiles common data formats into numpy arrays, it currently 
 - npz (numpy) datafiles
 - neuronexus (numpy) datafiles
 
-# optimization
+## ML - the machine learning toolbox
+
+Based on scipy & tensorflow
+
+- classification
+- dim_reduce
+- regression
+- convolutional_nn
+- ensemble
+- recurrent_nn
+- tf_cookbook (tensorflow cookbook)
+
+## optimization - the minimization/fitting toolbox
 
 Imlements: 
 
@@ -27,39 +41,38 @@ Imlements:
 - curve fits
 - ...
 
-# freq_analysis
+## freq_analysis - the spectral analysis toolbox
 
 Implements: 
 
 - Fourier transform
 - Wavelet transform
 
-# signal_library
+## signal_library - the library of standard signal
 
-Imlements: 
+Implements: 
 
 - generation of stochastic processes (Wiener process, Ornstein-Uhlenbeck process, ...)
 - set of classical functions (Gaussian, Heaviside, ...)
-
 - set of classical waveforms (Step, etc...)
 
-# processing
+## processing - signal processing toolbox
 
-Imlements: 
+Classical signal processing tools. It currently implements:
 
 - filtering 
 - denoising
 - smoothing
 - ...
 
-# statistics
+## statistics - the statistics toolbox
 
 Statistical library including classical and specific tests (based on *scipy.stats*):
 
 - permutation test
 - ...
 
-# workflow_tools
+## workflow_tools - various tools used in analysis pipeline
 
 Set of procedures for:
 
