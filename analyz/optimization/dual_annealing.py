@@ -7,7 +7,8 @@ def run_dual_annealing(func_to_minimize, x0,
     if bounds is None:
         bounds = [None for x in x0]
 
-    res = dual_annealing(func, bounds=bounds, seed=seed, maxiter=maxiter)
+    res = dual_annealing(func_to_minimize,
+                         bounds=bounds, seed=seed, maxiter=maxiter)
     if verbose:
         print(res)
     return res.x
