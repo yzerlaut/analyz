@@ -30,8 +30,12 @@ if __name__=='__main__':
     ges.cross_correl_plot(data, features=list(data.keys())[:6])
     
     pca = PCA(data, n_components = len(data)) # desired_var_explained=0.9)
+    
     ges.plot(100.*pca.explained_variance_ratio_,
               m='o', ms=4, xlabel='component #', ylabel='% var. expl.')
+
+    ges.parallel_plot(pca.components_,
+                      fig_args=dict(figsize=(3,1)))
 
     ges.show()
 
