@@ -20,7 +20,7 @@ def make_writable_elements(value):
         return value
     elif isinstance(value, float):
         return np.float(value)
-    elif isinstance(value, int):
+    elif isinstance(value, (int, np.int32)):
         return np.int(value)
     elif isinstance(value, str):
         return np.string_(value)
@@ -73,7 +73,7 @@ def recursively_save_dict_contents_to_group(h5file, path, dic):
                 h5file[new_key] = item
         elif isinstance(item, (np.int64, np.float64)):
             h5file[new_key] = item
-        elif isinstance(item, (int, float, str, bytes, tuple)):
+        elif isinstance(item, (int, np.int32, np.float32, float, str, bytes, tuple)):
             h5file[new_key] = make_writable_elements(item)
         elif isinstance(item, list):
             h5file[new_key] = make_writable_list(item)
