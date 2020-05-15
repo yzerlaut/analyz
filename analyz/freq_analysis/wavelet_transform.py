@@ -181,5 +181,6 @@ if __name__ == '__main__':
         coefs = my_cwt(data, freqs, dt)
 
         # illustration_plot(t, freqs, data, coefs)
-        time_freq_plot(t, freqs, data, coefs)
+        from datavyz import ge
+        ge.time_freq_plot(t, freqs, data, coefs)
     plt.show()
