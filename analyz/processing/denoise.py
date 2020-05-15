@@ -20,7 +20,8 @@ def remove_50Hz(t, signal):
     print(res)
     # return signal-sinewave(res.x)
     return signal, sinewave(res.x, t=t)
-    
+
+
 def remove_mean_drift(t, data, T=1.):
     """
     evaluate the mean of a signal over a sliding window of size T

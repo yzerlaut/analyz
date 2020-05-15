@@ -5,10 +5,12 @@ import numpy as np
 from scipy import signal
 from scipy import integrate
 from scipy.ndimage.filters import gaussian_filter1d
+from scipy.ndimage.filters import maximum_filter1d
 
 def gaussian_smoothing(Signal, idt_sbsmpl=10):
     """Gaussian smoothing of the data"""
     return gaussian_filter1d(Signal, idt_sbsmpl)
+
 
 def autocorrel(Signal, tmax, dt):
     """
@@ -23,6 +25,7 @@ def autocorrel(Signal, tmax, dt):
     cr = np.correlate(Signal2[steps:],Signal2)/steps
     time_shift = np.arange(len(cr))*dt
     return cr/cr.max(), time_shift
+
 
 def get_acf_time(Signal, dt,
                  min_time=1., max_time=100.,
@@ -185,6 +188,31 @@ def smooth(x,window_len=11,window='hanning'):
     y=np.convolve(w/w.sum(),s,mode='same')
     return y
 
+def sliding_minimum(array, Window):
+    return -maximum_filter1d(-array, size=Window)
+
+def sliding_maximum(array, Window):
+    return maximum_filter1d(array, size=Window)
+
+def strided_app(a, L, S ):  # Window len = L, Stride len/stepsize = S
+    nrows = ((a.size-L)//S)+1
+    n = a.strides[0]
+    return np.lib.stride_tricks.as_strided(a, shape=(nrows,L), strides=(S*n,n))
+
+def sliding_percentile(array, percentile, Window):
+
+    x = np.zeros(len(array))
+    y0 = strided_app(array, Window, 1)
+
+    y = np.percentile(y0, percentile, axis=-1)
+    
+    x[:int(Window/2)] = y[0]
+    x[-int(Window/2):] = y[-1]
+    x[int(Window/2)-1:-int(Window/2)] = y
+    
+    return x
+
+
 if __name__=='__main__':
 
     import matplotlib.pyplot as plt
@@ -196,6 +224,7 @@ if __name__=='__main__':
     _, ax = plt.subplots(2)
     ax[0].plot(t, Signal1, 'k')
     ax[0].plot(t, Signal2)
+    ax[0].plot(t, sliding_percentile(Signal2, 20, 200))
     ax[1].plot(t_shift, cr, '-')
-
+    
     plt.show()
