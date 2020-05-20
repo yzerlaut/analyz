@@ -118,48 +118,71 @@ def make_readable_dict(dic):
             dic2[key] = make_readable_elements(value)
     return dic2
 
-def load_dict_from_hdf5(filename):
+def load_dict_from_hdf5(filename, verbose=False):
     """
     ....
     """
     with h5py.File(filename, 'r') as h5file:
-        return recursively_load_dict_contents_from_group(h5file, '/')
+        return recursively_load_dict_contents_from_group(h5file, '/', verbose=verbose)
 
 
-def recursively_load_dict_contents_from_group(h5file, path):
+def recursively_load_dict_contents_from_group(h5file, path, verbose=False):
     """
     ....
     """
     ans = {}
     for key, item in h5file[path].items():
-        if isinstance(item, h5py._hl.dataset.Dataset):
-            if isinstance(item[()], bytes):
-                to_be_put = str(item[()],'utf-8')
-            elif isinstance(item[()], list):
-                to_be_put = make_readable_list(item[()])
+        try:
+            if isinstance(item, h5py._hl.dataset.Dataset):
+                if isinstance(item[()], bytes):
+                    to_be_put = str(item[()],'utf-8')
+                elif isinstance(item[()], list):
+                    to_be_put = make_readable_list(item[()])
+                elif isinstance(item[()], np.ndarray):
+                    to_be_put = item[()]
+                else:
+                    to_be_put = make_readable_elements(item[()])
+                ans[str(key)] = to_be_put
+            elif isinstance(item, h5py._hl.group.Group):
+                ans[str(key)] = recursively_load_dict_contents_from_group(h5file, path + key + '/')
+        except OSError:
+            # print('------------------------------------------------')
+            # print(item.attrs.values())
+            # print(item.attrs.keys())
+            if verbose:
+                print('The following was not recognized', key, item)
             else:
-                to_be_put = make_readable_elements(item[()])
-            ans[str(key)] = to_be_put
-        elif isinstance(item, h5py._hl.group.Group):
-            ans[str(key)] = recursively_load_dict_contents_from_group(h5file, path + key + '/')
+                pass
     return ans
 
 
 if __name__ == '__main__':
 
-    data = {'x': 'astring',
-            'y': np.arange(10),
-            '0_params': {'N': 4000, 'b': 0.0, 'Vthre': -50.0, 'name': 'RecExc', 'Cm': 200.0, 'El': -70.0, 'Trefrac': 5.0, 'tauw': 1000000000.0, 'Vreset': -70.0, 'Gl': 10.0, 'a': 0.0, 'delta_v': 0.0},
-            '1_params': {'N': 1000, 'b': 0.0, 'Cm': 200.0, 'Vthre': -53.0, 'Gl': 10.0, 'El': -70.0, 'Trefrac': 5.0, 'tauw': 1000000000.0, 'name': 'RecInh', 'Vreset': -70.0, 'a': 0.0, 'delta_v': 0.0},
-            '0':{'asdfsd':34, 'asd':np.ones(2), 'name':'234'},
-            '1':np.array([['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd'],['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd']], dtype=str),
-            '2':[['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd'],['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd']],
-            'd': {'z': np.ones((2,3)),
-                  'sdkfjh':'',
-                  'dict_of_dict':{'234':'kjsdfhsdjfh','z': np.ones((1,3))},
-                  'b': b'bytestring'}}
-    filename = 'test.h5'
-    save_dict_to_hdf5(data, filename)
+    # data = {'x': 'astring',
+    #         'y': np.arange(10),
+    #         '0_params': {'N': 4000, 'b': 0.0, 'Vthre': -50.0, 'name': 'RecExc', 'Cm': 200.0, 'El': -70.0, 'Trefrac': 5.0, 'tauw': 1000000000.0, 'Vreset': -70.0, 'Gl': 10.0, 'a': 0.0, 'delta_v': 0.0},
+    #         '1_params': {'N': 1000, 'b': 0.0, 'Cm': 200.0, 'Vthre': -53.0, 'Gl': 10.0, 'El': -70.0, 'Trefrac': 5.0, 'tauw': 1000000000.0, 'name': 'RecInh', 'Vreset': -70.0, 'a': 0.0, 'delta_v': 0.0},
+    #         '0':{'asdfsd':34, 'asd':np.ones(2), 'name':'234'},
+    #         '1':np.array([['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd'],['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd']], dtype=str),
+    #         '2':[['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd'],['asdfsd', 'asdfsd', 'asdfsd', 'asdfsd']],
+    #         'd': {'z': np.ones((2,3)),
+    #               'sdkfjh':'',
+    #               'dict_of_dict':{'234':'kjsdfhsdjfh','z': np.ones((1,3))},
+    #               'b': b'bytestring'}}
+    # save_dict_to_hdf5(data, filename)
+    # dd = load_dict_from_hdf5(filename)
+    # print(dd)
+    import sys
+    filename = sys.argv[-1]
+    # f = h5py.File(filename)
+    # for key in f.keys():
+    #     print(key)
+    # item = f['RecordB9']
+    # print(isinstance(item, h5py._hl.dataset.Dataset))
+    # print(isinstance(item[()], np.ndarray))
+    print(filename)
     dd = load_dict_from_hdf5(filename)
-    # should test for bad type
-    print(dd)
+    for key, val in dd.items():
+        print(key, val)
+    # print(f['RecordB9'].dtype)
+
