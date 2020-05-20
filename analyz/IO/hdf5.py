@@ -182,7 +182,8 @@ if __name__ == '__main__':
     # print(isinstance(item[()], np.ndarray))
     print(filename)
     dd = load_dict_from_hdf5(filename)
-    for key, val in dd.items():
-        print(key, val)
+    print(dd.keys())
+    # for key, val in dd.items():
+    #     print(key)
     # print(f['RecordB9'].dtype)
 
