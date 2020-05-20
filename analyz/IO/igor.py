@@ -1,5 +1,5 @@
 import numpy as np
-import hdf5
+from .hdf5 import load_dict_from_hdf5
 
 import string
 
@@ -92,7 +92,7 @@ def reshape_data_from_Igor(data,
 def load_hdf5_exported_from_Igor(filename,
                                  dt_subsampling=0.,
                                  verbose=False):
-    data = hdf5.load_dict_from_hdf5(filename)
+    data = load_dict_from_hdf5(filename)
     new_data = reshape_data_from_Igor(data,
                                       dt_subsampling=dt_subsampling,
                                       verbose=verbose)
