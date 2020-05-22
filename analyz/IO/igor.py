@@ -1,7 +1,7 @@
 import numpy as np
 from .hdf5 import load_dict_from_hdf5
 
-import string
+import string, sys
 
 def reshape_data_from_Igor(data,
                            dt_subsampling=0,
@@ -47,9 +47,10 @@ def reshape_data_from_Igor(data,
     for i, name in enumerate(rec_names):
         if verbose:
             print('  * %i) %s in %s' % (i, name, rec_units[i]))
-        new_data['recordings'][name] = []
-        for key in data['NMPrefix_Record']['ChanWaveNames%s'%string.ascii_uppercase[i]]:
-            new_data['recordings'][name].append(data[key][::isubsampling])
+        new_data['recordings'][name], j = [], 0
+        while 'Record%s%i' % (string.ascii_uppercase[i], j) in data:
+            new_data['recordings'][name].append(data['Record%s%i'%(string.ascii_uppercase[i],j)][::isubsampling])
+            j+=1
         new_data['recordings'][name] = np.array(new_data['recordings'][name])
         new_data['Metadata']['%s_unit' % name] = rec_units[i]
     #
@@ -76,9 +77,14 @@ def reshape_data_from_Igor(data,
     ##############################################
     # IGOR Metadata
     KEYS = [key for key in data.keys() if (len(key.split('Record'))==1) and (key!=protocol_key)]
-
+    # data keys
     for key in KEYS:
         new_data['Metadata'][key] = data[key]
+    # protocol keys
+    for key in data[protocol_key]:
+        if sys.getsizeof(data[protocol_key][key])<1000: # if not a full-data array
+            new_data['Metadata'][key] = data[protocol_key][key]
+    
     # some specific processing here
     if 'CT_RecordMode' in data:
         if data['CT_RecordMode']==1:
