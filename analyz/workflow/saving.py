@@ -12,7 +12,7 @@ def filename_with_datetime(filename,
         d = datetime.datetime.now().strftime("%Y_%m_%d-%H:%M:%S-%f")
     else:
         d = datetime.datetime.now().strftime("%Y_%m_%d-%H:%M:%S")
-    return os.path.join(folder, filename, d+'.'+extension)
+    return os.path.join(folder, filename+d+'.'+extension)
 
 
 if __name__=='__main__':
