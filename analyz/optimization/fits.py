@@ -8,7 +8,7 @@ def leastsq_fit(x, data, waveform, coeffs, verbose=False):
     'waveform' has to be a fnction waveform(x, coeffs) :
     """
     def residuals(coeffs, y, x):
-        return y - waveform(x, coeffs)    
+        return np.abs(y - waveform(x, coeffs))
     
     C, flag = leastsq(residuals, coeffs, args=(data, x))
 
