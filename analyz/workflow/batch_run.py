@@ -54,3 +54,23 @@ class slurm_script:
             self.script += instruction
         else:
             self.script += instruction+'\n'
+
+class bash_script:
+
+    def __init__(self):
+        
+        self.script = '#!/bin/bash\n'
+
+    def write(self, filename=None, folder='.'):
+        if filename is None:
+           filename = self.jobname+'.sh'
+
+           with open(os.path.join(folder, filename), 'w') as f:
+               f.write(self.script)
+
+    def append_instruction(self, instruction):
+        if instruction.endswith('\n'):
+            self.script += instruction
+        else:
+            self.script += instruction+'\n'
+            
