@@ -46,8 +46,8 @@ class slurm_script:
         if filename is None:
            filename = self.jobname+'.sh'
 
-           with open(os.path.join(folder, filename), 'w') as f:
-               f.write(self.script)
+        with open(os.path.join(folder, filename), 'w') as f:
+            f.write(self.script)
 
     def append_instruction(self, instruction):
         if instruction.endswith('\n'):
@@ -55,6 +55,7 @@ class slurm_script:
         else:
             self.script += instruction+'\n'
 
+            
 class bash_script:
 
     def __init__(self):
@@ -65,8 +66,8 @@ class bash_script:
         if filename is None:
            filename = self.jobname+'.sh'
 
-           with open(os.path.join(folder, filename), 'w') as f:
-               f.write(self.script)
+        with open(os.path.join(folder, filename), 'w') as f:
+            f.write(self.script)
 
     def append_instruction(self, instruction):
         if instruction.endswith('\n'):
