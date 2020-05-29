@@ -18,4 +18,4 @@ def filename_with_datetime(filename,
 if __name__=='__main__':
 
     print(filename_with_datetime('', folder='./', extension='.npy'))
-    print(filename_with_datetime('', folder='./', extension='npy'))    
+    print(filename_with_datetime('', folder='./', extension='npy'))

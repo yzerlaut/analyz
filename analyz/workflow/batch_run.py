@@ -58,8 +58,8 @@ class slurm_script:
             
 class bash_script:
 
-    def __init__(self):
-        
+    def __init__(self, jobname):
+        self.jobname = jobname
         self.script = '#!/bin/bash\n'
 
     def write(self, filename=None, folder='.'):
@@ -74,4 +74,58 @@ class bash_script:
             self.script += instruction
         else:
             self.script += instruction+'\n'
+
+
             
+class GridSimulation:
+
+    def __init__(self, GRID):
+
+        self.N = np.product([len(GRID[key]) for key in GRID.keys()])
+        self.Ns = [len(GRID[key]) for key in list(GRID.keys())]
+        self.nkeys = len(list(GRID.keys()))
+        self.GRID = GRID
+
+        # useful to split indices
+        self.cumNprod = [int(np.product([len(self.GRID[key]) for key in list(self.GRID.keys())[i:]])) for i in range(len(self.GRID.keys())+1)]
+        
+    def update_dict_from_GRID_and_index(self, i, dict_to_fill):
+
+        if i>=self.N:
+            print('/!\ index to high given the GRID /!\ ')
+
+        Is = self.compute_indices(i)
+
+        for k, key in enumerate(GRID.keys()):
+            dict_to_fill[key] = self.GRID[key][Is[k]]
+
+
+    def params_filename(self, i,
+                        formatting=None):
+        """
+        print(sim.params_filename(i, formatting=['%.1f', '%.2f', '%.2f', '%i', '%.0f']))
+        """
+        if i>=self.N:
+            print('/!\ index to high given the GRID /!\ ')
+
+        Is = self.compute_indices(i)
+
+        if formatting is None:
+            formatting = ['%.3f' for n in range(self.nkeys)]
+            
+        filename = ''
+        for k, key in enumerate(GRID.keys()):
+            filename += ('%s_'+formatting[k]+'--') % (key, self.GRID[key][Is[k]])
+
+        return filename[:-2]
+            
+
+    def compute_indices(self, i):
+
+        Is = np.zeros(self.nkeys, dtype=int) #
+
+        Is[self.nkeys-1] = i % Ns[self.nkeys-1]
+        for ii in range(self.nkeys-1):
+            Is[ii] = int((i-np.sum(np.dot(Is, self.cumNprod[1:])))/np.product(self.Ns[ii+1:]))
+
+        return Is
