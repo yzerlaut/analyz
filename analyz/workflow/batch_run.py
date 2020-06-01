@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 class slurm_script:
 
@@ -96,7 +97,7 @@ class GridSimulation:
 
         Is = self.compute_indices(i)
 
-        for k, key in enumerate(GRID.keys()):
+        for k, key in enumerate(self.GRID.keys()):
             dict_to_fill[key] = self.GRID[key][Is[k]]
 
 
@@ -114,7 +115,7 @@ class GridSimulation:
             formatting = ['%.3f' for n in range(self.nkeys)]
             
         filename = ''
-        for k, key in enumerate(GRID.keys()):
+        for k, key in enumerate(self.GRID.keys()):
             filename += ('%s_'+formatting[k]+'--') % (key, self.GRID[key][Is[k]])
 
         return filename[:-2]
@@ -122,9 +123,9 @@ class GridSimulation:
 
     def compute_indices(self, i):
 
-        Is = np.zeros(self.nkeys, dtype=int) #
+        Is = np.zeros(self.nkeys, dtype=int) 
 
-        Is[self.nkeys-1] = i % Ns[self.nkeys-1]
+        Is[self.nkeys-1] = i % self.Ns[self.nkeys-1]
         for ii in range(self.nkeys-1):
             Is[ii] = int((i-np.sum(np.dot(Is, self.cumNprod[1:])))/np.product(self.Ns[ii+1:]))
 
