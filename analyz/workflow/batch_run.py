@@ -79,13 +79,17 @@ class bash_script:
 
             
 class GridSimulation:
-
+    """
+    type of dict elements should be numpy arrays !!
+    """
+    
     def __init__(self, GRID):
 
         self.N = np.product([len(GRID[key]) for key in GRID.keys()])
         self.Ns = [len(GRID[key]) for key in list(GRID.keys())]
         self.nkeys = len(list(GRID.keys()))
         self.GRID = GRID
+        self.dtypes = [GRID[key].dtype for key in list(GRID.keys())]
 
         # useful to split indices
         self.cumNprod = [int(np.product([len(self.GRID[key]) for key in list(self.GRID.keys())[i:]])) for i in range(len(self.GRID.keys())+1)]
@@ -112,7 +116,15 @@ class GridSimulation:
         Is = self.compute_indices(i)
 
         if formatting is None:
-            formatting = ['%.3f' for n in range(self.nkeys)]
+            formatting = []
+            for dtype in self.dtypes:
+                print(dtype)
+                if dtype==int:
+                    formatting.append('%i')
+                elif dtype==float:
+                    formatting.append('%f')
+                else:
+                    formatting.append('%s')
             
         filename = ''
         for k, key in enumerate(self.GRID.keys()):
@@ -130,3 +142,14 @@ class GridSimulation:
             Is[ii] = int((i-np.sum(np.dot(Is, self.cumNprod[1:])))/np.product(self.Ns[ii+1:]))
 
         return Is
+
+
+if __name__=='__main__':
+
+    GRID = {'x':np.arange(10),
+            'y':np.linspace(0, 1),
+            'z':np.array(['kjsdhf', 'ksjdhf'])}
+
+    sim = GridSimulation(GRID)
+
+    print(sim.params_filename(2))
