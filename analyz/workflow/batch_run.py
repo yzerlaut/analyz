@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from analyz.IO.npz import load_dict
 
 class slurm_script:
 
@@ -85,6 +86,9 @@ class GridSimulation:
     
     def __init__(self, GRID):
 
+        if type(GRID) is str:
+            GRID = load_dict(GRID)
+
         self.N = np.product([len(GRID[key]) for key in GRID.keys()])
         self.Ns = [len(GRID[key]) for key in list(GRID.keys())]
         self.nkeys = len(list(GRID.keys()))
@@ -118,7 +122,6 @@ class GridSimulation:
         if formatting is None:
             formatting = []
             for dtype in self.dtypes:
-                print(dtype)
                 if dtype==int:
                     formatting.append('%i')
                 elif dtype==float:
@@ -131,7 +134,26 @@ class GridSimulation:
             filename += ('%s_'+formatting[k]+'--') % (key, self.GRID[key][Is[k]])
 
         return filename[:-2]
+
+    def build_script(self, base_instruction,
+                     base_script=None,
+                     simultaneous_runs=0):
+        """
+        """
+
+        if base_script is None:
+            script=''
+        else:
+            script=base_script
             
+        for i in range(self.N):
+            if (simultaneous_runs>0) and (i%simultaneous_runs<(simultaneous_runs-1)):
+                script+='%s %i &\n' % (base_instruction, i)
+            else:
+                script+='%s %i\n' % (base_instruction, i)
+                
+        return script
+    
 
     def compute_indices(self, i):
 
@@ -146,10 +168,16 @@ class GridSimulation:
 
 if __name__=='__main__':
 
-    GRID = {'x':np.arange(10),
-            'y':np.linspace(0, 1),
+    #ss = slurm_script('calib-passive', partition='bigmem', mem='10G', nodes=1)
+    
+    GRID = {'x':np.arange(3),
+            'y':np.linspace(0, 1, 5),
             'z':np.array(['kjsdhf', 'ksjdhf'])}
 
     sim = GridSimulation(GRID)
 
-    print(sim.params_filename(2))
+    bs = bash_script('test')
+    
+    # print(sim.params_filename(2))
+    bs.script = sim.build_script('python -c "print(3)"', base_script=bs.script)
+    print(bs.script)
