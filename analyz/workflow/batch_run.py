@@ -151,8 +151,11 @@ class GridSimulation:
                 script+='%s %i &\n' % (base_instruction, i)
             else:
                 script+='%s %i\n' % (base_instruction, i)
-                
-        return script
+
+        if script.endswith(' &\n'):
+            return script[:-3]
+        else:
+            return script
     
 
     def compute_indices(self, i):
@@ -179,5 +182,7 @@ if __name__=='__main__':
     bs = bash_script('test')
     
     # print(sim.params_filename(2))
-    bs.script = sim.build_script('python -c "print(3)"', base_script=bs.script)
+    bs.script = sim.build_script('python -c "print(3)"',
+                                 base_script=bs.script,
+                                 simultaneous_runs=100)
     print(bs.script)
