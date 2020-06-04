@@ -100,9 +100,6 @@ class GridSimulation:
         
     def update_dict_from_GRID_and_index(self, i, dict_to_fill):
 
-        if i>=self.N:
-            print('/!\ index to high given the GRID /!\ ')
-
         Is = self.compute_indices(i)
 
         for k, key in enumerate(self.GRID.keys()):
@@ -112,12 +109,16 @@ class GridSimulation:
     def params_filename(self, i,
                         formatting=None):
         """
+        i can be either the fill index 
         print(sim.params_filename(i, formatting=['%.1f', '%.2f', '%.2f', '%i', '%.0f']))
         """
-        if i>=self.N:
-            print('/!\ index to high given the GRID /!\ ')
-
-        Is = self.compute_indices(i)
+        
+        if type(i)==int:
+            Is = self.compute_indices(i)
+        elif (type(i)==list) and (len(i)==self.nkeys):
+            Is = np.array(i) # should be the array of indices
+        else:
+            BaseException('argument not recognized')
 
         if formatting is None:
             formatting = []
@@ -178,11 +179,12 @@ if __name__=='__main__':
             'z':np.array(['kjsdhf', 'ksjdhf'])}
 
     sim = GridSimulation(GRID)
-
+    print(sim.params_filename(3))
+    print(sim.params_filename([2, 4, 1]))
     bs = bash_script('test')
     
     # print(sim.params_filename(2))
     bs.script = sim.build_script('python -c "print(3)"',
                                  base_script=bs.script,
                                  simultaneous_runs=100)
-    print(bs.script)
+    # print(bs.script)
