@@ -113,12 +113,13 @@ class GridSimulation:
         print(sim.params_filename(i, formatting=['%.1f', '%.2f', '%.2f', '%i', '%.0f']))
         """
         
-        if type(i)==int:
+        if isinstance(i, (int, np.int32, np.int64)):
             Is = self.compute_indices(i)
-        elif (type(i)==list) and (len(i)==self.nkeys):
+        elif isinstance(i, (list, np.array)) and (len(i)==self.nkeys):
             Is = np.array(i) # should be the array of indices
         else:
-            BaseException('argument not recognized')
+            print('argument not recognized')
+            Is = []
 
         if formatting is None:
             formatting = []
@@ -129,7 +130,7 @@ class GridSimulation:
                     formatting.append('%f')
                 else:
                     formatting.append('%s')
-            
+
         filename = ''
         for k, key in enumerate(self.GRID.keys()):
             filename += ('%s_'+formatting[k]+'--') % (key, self.GRID[key][Is[k]])
