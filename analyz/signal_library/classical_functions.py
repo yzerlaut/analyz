@@ -1,6 +1,9 @@
 import numpy as np
-from  scipy.special import erf
+from scipy.special import erf
 
+def heaviside(x, x0=0):
+    return (np.sign(x-x0)+1.)/2.
+    
 def gaussian(x, mean=0., std=1.):
     """
     """
