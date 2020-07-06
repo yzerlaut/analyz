@@ -1,7 +1,10 @@
-import numpy as np
-from .hdf5 import load_dict_from_hdf5
+import string, sys, os, platform
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),os.path.pardir))
 
-import string, sys
+import numpy as np
+
+from IO.hdf5 import load_dict_from_hdf5
+
 
 def reshape_data_from_Igor(data,
                            dt_subsampling=0,
@@ -104,3 +107,16 @@ def load_hdf5_exported_from_Igor(filename,
                                       verbose=verbose)
     new_data['Metadata']['filename'] = filename
     return new_data
+
+if __name__ == '__main__':
+
+    filename = sys.argv[-1]
+    data = load_hdf5_exported_from_Igor(filename)
+    print(data)
+    # print(filename)
+    # dd = load_dict_from_hdf5(filename)
+    # print(dd.keys())
+    # for key, val in dd.items():
+    #     print(key)
+    # print(f['RecordB9'].dtype)
+
