@@ -89,6 +89,10 @@ class GridSimulation:
         if type(GRID) is str:
             GRID = load_dict(GRID)
 
+        for key in GRID: # forcing to have a set of numpy arrays
+            if type(GRID[key])!=np.ndarray:
+                GRID[key] = np.array([GRID[key]])
+
         self.N = np.product([len(GRID[key]) for key in GRID.keys()])
         self.Ns = [len(GRID[key]) for key in list(GRID.keys())]
         self.nkeys = len(list(GRID.keys()))
