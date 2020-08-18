@@ -34,17 +34,17 @@ def gaussian_2d(x, y,
     
     return xcomp*ycomp
 
-def exp_thresh(x):
+def exp_thresh(x, thresh=50):
     """
     useful for fitting (where the argument is varied)
     """
-    if x<50:
-        return np.exp(x)
-    else:
-        return 5e21
+    x2 = np.less(x,thresh).astype(int)
+    return x2*np.exp(x*x2)+(1-x2)*np.exp(thresh)
     
 if __name__=='__main__':
 
+    print(exp_thresh(np.arange(200, 300)), np.exp(np.arange(200, 300)))
+    
     from datavyz.main import graph_env
     ge = graph_env()
     
