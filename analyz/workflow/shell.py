@@ -1,7 +1,8 @@
 
 
 # Print iterations progress
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+def printProgressBar (iteration, total, prefix = 'Progress:', suffix = 'Complete', length = 50,
+                      decimals = 1, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -32,10 +33,10 @@ if __name__=='__main__':
     l = len(items)
 
     # Initial call to print 0% progress
-    printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    printProgressBar(0, l)
     for i, item in enumerate(items):
         # Do stuff...
         time.sleep(0.1)
         # Update Progress Bar
-        printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)    
+        printProgressBar(i + 1, l)
         
