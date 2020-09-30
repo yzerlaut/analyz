@@ -108,6 +108,7 @@ def load_hdf5_exported_from_Igor(filename,
                                           dt_subsampling=dt_subsampling,
                                           verbose=verbose)
         new_data['Metadata']['filename'] = filename
+        return new_data
     else:
         return data
 
