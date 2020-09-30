@@ -100,13 +100,16 @@ def reshape_data_from_Igor(data,
 
 def load_hdf5_exported_from_Igor(filename,
                                  dt_subsampling=0.,
-                                 verbose=False):
+                                 verbose=False,
+                                 with_reshaping=True):
     data = load_dict_from_hdf5(filename)
-    new_data = reshape_data_from_Igor(data,
-                                      dt_subsampling=dt_subsampling,
-                                      verbose=verbose)
-    new_data['Metadata']['filename'] = filename
-    return new_data
+    if with_reshaping:
+        new_data = reshape_data_from_Igor(data,
+                                          dt_subsampling=dt_subsampling,
+                                          verbose=verbose)
+        new_data['Metadata']['filename'] = filename
+    else:
+        return data
 
 if __name__ == '__main__':
 
