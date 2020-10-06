@@ -1,5 +1,19 @@
 import os
 
+def get_files_with_extension(folder, extension='.txt',
+                             recursive=False):
+    FILES = []
+    if recursive:
+        for root, dirs, files in os.walk(folder):
+            for file in files:
+                if file.endswith(extension):
+                     FILES.append(os.path.join(root, file))
+    else:
+        for file in os.listdir(folder):
+            if file.endswith(extension):
+                FILES.append(os.path.join(folder, file))
+    return FILES
+    
 def get_files_ordered_by_creation(dirpath,
                                   extension='',
                                   return_full_path=True):
@@ -38,7 +52,10 @@ def choose_a_file_based_on_keyboard_input(dirpath, extension='', Nmax=5):
     return list_of_files[number]
 
 if __name__ == '__main__':
-    print(get_directories_ordered_by_creation(os.path.join(os.getenv("HOME"), 'DATA')))
+
+    folder = get_directories_ordered_by_creation(os.path.join(os.getenv("HOME"), 'DATA'))[-3]
+
+    print(get_files_with_extension(folder, '.npy', recursive=False))
     last_dir = get_directories_ordered_by_creation(os.path.join(os.getenv("HOME"), 'DATA'))[-1]
     print(get_files_ordered_by_creation(last_dir, ''))
     
