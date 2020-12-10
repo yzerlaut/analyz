@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from analyz.IO.npz import load_dict
 
 class slurm_script:
 
@@ -87,7 +86,7 @@ class GridSimulation:
     def __init__(self, GRID):
 
         if type(GRID) is str:
-            GRID = load_dict(GRID)
+            GRID = np.load(GRID, allow_pickle=True).item()
 
         for key in GRID: # forcing to have a set of numpy arrays
             if type(GRID[key])!=np.ndarray:
@@ -191,5 +190,5 @@ if __name__=='__main__':
     # print(sim.params_filename(2))
     bs.script = sim.build_script('python -c "print(3)"',
                                  base_script=bs.script,
-                                 simultaneous_runs=100)
-    # print(bs.script)
+                                 simultaneous_runs=8)
+    print(bs.script)
