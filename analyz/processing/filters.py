@@ -8,9 +8,9 @@ def butter_lowpass(Fcutoff, Facq, order=5):
     b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
     return b, a
 
-def butter_lowpass_filter(data, Fcutoff, Facq, order=5):
+def butter_lowpass_filter(data, Fcutoff, Facq, order=5, axis=-1):
     b, a = butter_lowpass(Fcutoff, Facq, order=order)
-    y = signal.lfilter(b, a, data)
+    y = signal.lfilter(b, a, data, axis=axis)
     return y
 
 def butter_highpass(Fcutoff, Facq, order=5):
@@ -19,9 +19,9 @@ def butter_highpass(Fcutoff, Facq, order=5):
     b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
     return b, a
 
-def butter_highpass_filter(data, Fcutoff, Facq, order=5):
+def butter_highpass_filter(data, Fcutoff, Facq, order=5, axis=-1):
     b, a = butter_highpass(Fcutoff, Facq, order=order)
-    y = signal.lfilter(b, a, data)
+    y = signal.lfilter(b, a, data, axis=axis)
     return y
 
 def butter_bandpass(lowcut, highcut, Facq, order=5):
@@ -31,9 +31,9 @@ def butter_bandpass(lowcut, highcut, Facq, order=5):
     b, a = signal.butter(order, [low, high], btype='band')
     return b, a
 
-def butter_bandpass_filter(data, lowcut, highcut, Facq, order=5):
+def butter_bandpass_filter(data, lowcut, highcut, Facq, order=5, axis=-1):
     b, a = butter_bandpass(lowcut, highcut, Facq, order=order)
-    y = signal.lfilter(b, a, data)
+    y = signal.lfilter(b, a, data, axis=axis)
     return y
 
 if __name__=='__main__':
