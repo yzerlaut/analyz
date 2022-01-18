@@ -45,10 +45,10 @@ if __name__=='__main__':
     if len(sys.argv)>1:
         filtertype = sys.argv[-1]
     else:
-        filtertype = 'low-pass'
+        filtertype = 'band-pass'
         
     # Filter requirements.
-    order = 10
+    order = 8
     fs = 300.0       # sample rate, Hz
     cutoff = 30.667  # desired cutoff frequency of the filter, Hz
 
@@ -58,7 +58,7 @@ if __name__=='__main__':
     elif filtertype=='high-pass':
         b, a = butter_highpass(cutoff, fs, order)
     elif filtertype=='band-pass':
-        b, a = butter_bandpass(cutoff, cutoff/10., fs, order)
+        b, a = butter_bandpass(1.3*cutoff, cutoff/2., fs, order)
 
     # Plot the frequency response.
     w, h = signal.freqz(b, a, worN=8000)
@@ -76,15 +76,10 @@ if __name__=='__main__':
     n = int(T * fs) # total number of samples
     t = np.linspace(0, T, n, endpoint=False)
     # "Noisy" data.  We want to recover the 1.2 Hz signal from this.
-    data = np.sin(1.2*2*np.pi*t) + 1.5*np.cos(9*2*np.pi*t) + 0.5*np.sin(12.0*2*np.pi*t)+5.
+    data = np.sin(1.2*2*np.pi*t) + 1.5*np.cos(9*2*np.pi*t) + 0.5*np.sin(12.0*2*np.pi*t)+5.+3*np.sin(cutoff*2*np.pi*t)
 
     # Filter the data, and plot both the original and filtered signals.
-    if filtertype=='low-pass':
-        y = butter_lowpass_filter(data, cutoff, fs, order)
-    elif filtertype=='high-pass':
-        y = butter_highpass_filter(data, cutoff, fs, order)
-    elif filtertype=='band-pass':
-        y = butter_bandpass(cutoff, cutoff/10., fs, order)
+    y = signal.lfilter(b, a, data, axis=-1)
 
     plt.subplot(2, 1, 2)
     plt.plot(t, data, 'b-', label='data')
