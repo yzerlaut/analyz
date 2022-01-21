@@ -32,6 +32,7 @@ setup(
         "numpy",
         "scipy",
         "h5py",
+        "scikit-learn",
         "argparse"
     ]
 )
