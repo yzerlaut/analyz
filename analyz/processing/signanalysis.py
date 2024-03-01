@@ -64,20 +64,67 @@ def crosscorrel(Signal1, Signal2, tmax, dt):
     when the peak is in the past (negative t_shift)
     it means that Signal2 is delayed with respect to Signal 1
     --------------------------------------------------------------
+    Confirm this with:
+    ```
+    t = np.linspace(0, np.pi*2, int(1e3))
+    Signal1 = np.sin(3*t)
+    Signal2 = np.cos(3*t-np.pi/6)
+    cr, t_shift = crosscorrel(Signal1, Signal2, np.pi/2, t[1]-t[0])
+    _, ax = plt.subplots(2)
+    ax[0].plot(t, Signal1, label='Signal 1')
+    ax[0].plot(t, Signal2, label='Signal 2')
+    ax[0].legend()
+    ax[1].plot(t_shift, cr, 'k-')
+    ```
     """
     if len(Signal1)!=len(Signal2):
         print('Need two arrays of the same size !!')
         
     steps = int(tmax/dt) # number of steps to sum on
-    time_shift = dt*np.concatenate([-np.arange(1, steps)[::-1], np.arange(steps)])
+    time_shift = dt*np.concatenate([-np.arange(1, steps)[::-1],
+                                    np.arange(steps)])
     CCF = np.zeros(len(time_shift))
     for i in np.arange(steps):
+        # forward
         ccf = np.corrcoef(Signal1[:len(Signal1)-i], Signal2[i:])
         CCF[steps-1+i] = ccf[0,1]
-    for i in np.arange(steps):
+        # backward
         ccf = np.corrcoef(Signal2[:len(Signal1)-i], Signal1[i:])
         CCF[steps-1-i] = ccf[0,1]
     return CCF, time_shift
+
+def crosscorrel_fast(Signal1, Signal2, tmax, dt,
+                     mode='same'):
+    """
+    NOT WORKING
+
+
+    argument : Signal1 (np.array()), Signal2 (np.array())
+    returns : np.array()
+    take two Signals, and returns their crosscorrelation function 
+
+    CONVENTION:
+    --------------------------------------------------------------
+    when the peak is in the past (negative t_shift)
+    it means that Signal2 is delayed with respect to Signal 1
+    --------------------------------------------------------------
+    """
+    if len(Signal1)!=len(Signal2):
+
+        print('Need two arrays of the same size !!')
+
+        return [], []
+
+    else:
+    
+        n = len(Signal1)
+        CCF0 = signal.correlate(np.ones(n), np.ones(n+1),
+                                mode=mode)
+        CCF = signal.correlate(Signal1, Signal2, 
+                               mode=mode)
+        lags = dt*signal.correlation_lags(n, n,
+                                          mode=mode)
+        return 2*CCF/CCF0, lags
 
 def crosscorrel_norm(Signal1,Signal2):
     """
@@ -217,14 +264,18 @@ if __name__=='__main__':
 
     import matplotlib.pyplot as plt
     
-    t = np.linspace(0, np.pi*2, int(1e3))
+    t = np.linspace(0, np.pi*2, int(1000))
     Signal1 = np.sin(3*t)
-    Signal2 = np.cos(3*t-np.pi/4)
-    cr, t_shift = crosscorrel(Signal1, Signal2, np.pi/2, t[1]-t[0])
+    Signal2 = np.cos(3*t-np.pi/6)
     _, ax = plt.subplots(2)
-    ax[0].plot(t, Signal1, 'k')
-    ax[0].plot(t, Signal2)
-    ax[0].plot(t, sliding_percentile(Signal2, 20, 200))
-    ax[1].plot(t_shift, cr, '-')
+    ax[0].plot(t, Signal1, label='Signal 1')
+    ax[0].plot(t, Signal2, label='Signal 2')
+    ax[0].legend()
+    cr, t_shift = crosscorrel(Signal1, Signal2, 2*np.pi, t[1]-t[0])
+    ax[1].plot(t_shift, cr, 'k-')
+    cr, t_shift = crosscorrel_fast(Signal1, Signal2, np.pi/2, t[1]-t[0])
+    plt.figure()
+    plt.plot(t_shift, cr, 'r:')
     
+    # ax[0].plot(t, sliding_percentile(Signal2, 20, 200))
     plt.show()
