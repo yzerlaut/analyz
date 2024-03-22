@@ -61,7 +61,7 @@ def crosscorrel(Signal1, Signal2, tmax, dt):
 
     CONVENTION:
     --------------------------------------------------------------
-    when the peak is in the past (negative t_shift)
+    when the peak is in the future (positive t_shift)
     it means that Signal2 is delayed with respect to Signal 1
     --------------------------------------------------------------
     Confirm this with:
